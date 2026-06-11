@@ -13,6 +13,7 @@ import {
 } from '@/lib/game-engine';
 import { getAIDecision, AIDifficulty } from '@/lib/ai-player';
 import { createPlaceholderGameState } from '@/lib/initial-state';
+import { TIMING } from '@/lib/timing';
 import { logGameState } from '@/lib/debug-helper';
 
 // Game reducer to handle state transitions
@@ -167,7 +168,7 @@ export function useGameState(aiDifficulty: AIDifficulty = 'easy', matchTarget = 
 
     const timer = setTimeout(() => {
       dispatch({ type: 'END_TURN' });
-    }, 400);
+    }, TIMING.endTurnDelay);
 
     return () => clearTimeout(timer);
   }, [gameState.phase, gameState.turnAction]);
@@ -188,7 +189,7 @@ export function useGameState(aiDifficulty: AIDifficulty = 'easy', matchTarget = 
       } else {
         dispatch({ type: 'DRAW_CARD' });
       }
-    }, 1200);
+    }, TIMING.aiThinkDelay);
 
     // Cleanup timeout on unmount or when dependencies change
     return () => clearTimeout(timer);
