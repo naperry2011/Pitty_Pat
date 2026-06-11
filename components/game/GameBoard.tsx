@@ -9,6 +9,7 @@ import DiscardPile from './DiscardPile';
 import CardStyleSelector from './CardStyleSelector';
 import { findPlayableCards } from '@/lib/game-engine';
 import { GameSettings } from '@/lib/settings';
+import Icon from '@/components/ui/Icon';
 import clsx from 'clsx';
 
 // Confetti component for win celebration
@@ -114,7 +115,7 @@ export default function GameBoard({ settings, onChangeSettings }: GameBoardProps
     return (
       <div className="min-h-screen flex items-center justify-center playful-bg">
         <div className="text-gray-600 text-2xl animate-pulse flex items-center gap-3">
-          <span className="text-4xl">🎴</span>
+          <Icon name="cards" size={36} className="text-coral" />
           <span>Starting game...</span>
         </div>
       </div>
@@ -184,10 +185,10 @@ export default function GameBoard({ settings, onChangeSettings }: GameBoardProps
           {/* Home Button */}
           <Link
             href="/"
-            className="w-10 h-10 bg-white/80 backdrop-blur-sm rounded-xl shadow-soft flex items-center justify-center text-xl active:scale-95 transition-transform"
+            className="w-10 h-10 bg-white/80 backdrop-blur-sm rounded-xl shadow-soft flex items-center justify-center text-gray-600 active:scale-95 transition-transform"
             onClick={(e) => e.stopPropagation()}
           >
-            🏠
+            <Icon name="home" aria-label="Home" />
           </Link>
 
           {/* Title */}
@@ -239,7 +240,7 @@ export default function GameBoard({ settings, onChangeSettings }: GameBoardProps
             "text-center mb-2 font-bold text-sm transition-all duration-300",
             currentPlayer?.isAI ? "text-suit-spades scale-105" : "text-gray-500"
           )}>
-            Computer {currentPlayer?.isAI && <span className="animate-pulse">🤔</span>}
+            Computer {currentPlayer?.isAI && <span className="animate-pulse">…</span>}
           </div>
           <div className="flex justify-center">
             {aiPlayer && (
@@ -286,15 +287,9 @@ export default function GameBoard({ settings, onChangeSettings }: GameBoardProps
                 canPlay ? "bg-gradient-to-r from-coral to-suit-hearts" : "bg-gradient-to-r from-mint to-suit-clubs"
               )}>
                 {canPlay ? (
-                  <span className="flex items-center gap-2">
-                    <span>Tap a matching card!</span>
-                    <span className="animate-bounce">👇</span>
-                  </span>
+                  <span>Tap a matching card!</span>
                 ) : canDraw ? (
-                  <span className="flex items-center gap-2">
-                    <span>Tap deck to draw</span>
-                    <span className="animate-pulse">👆</span>
-                  </span>
+                  <span>Tap deck to draw</span>
                 ) : null}
               </div>
             </div>
@@ -307,7 +302,7 @@ export default function GameBoard({ settings, onChangeSettings }: GameBoardProps
             "text-center mb-2 font-bold text-sm transition-all duration-300",
             isPlayerTurn ? "text-coral scale-105" : "text-gray-500"
           )}>
-            Your Hand {isPlayerTurn && <span>✨</span>}
+            Your Hand
           </div>
           <div className="flex justify-center" onClick={(e) => e.stopPropagation()}>
             {humanPlayer && (
@@ -347,7 +342,7 @@ export default function GameBoard({ settings, onChangeSettings }: GameBoardProps
               "text-gray-400 transition-transform duration-200",
               showInstructions && "rotate-180"
             )}>
-              ▼
+              <Icon name="arrow-down" size={18} />
             </span>
           </button>
 

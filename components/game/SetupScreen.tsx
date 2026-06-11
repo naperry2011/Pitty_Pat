@@ -32,7 +32,7 @@ export default function SetupScreen({ initial, onStart }: SetupScreenProps) {
     <div className="min-h-screen playful-bg flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-md flex flex-col gap-6">
         <h1 className="font-display text-3xl sm:text-4xl font-bold text-center text-transparent bg-clip-text bg-gradient-to-r from-coral to-soft-purple">
-          Game Setup 🎴
+          Game Setup
         </h1>
 
         {/* Difficulty picker */}
