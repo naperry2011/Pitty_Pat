@@ -19,102 +19,111 @@ const FELT_DEEP = '#1F7A6D';
 const GOLD = '#F4B942';
 const PURPLE = '#DDA0DD';
 
-function ClassicBack() {
+const ClassicBack = React.memo(function ClassicBack() {
+  // useId gives each instance unique def ids so duplicate backs on one page
+  // never reference another instance's (potentially hidden) defs.
+  const uid = React.useId();
+  const baseId = `pp-classic-base-${uid}`;
+  const latticeId = `pp-classic-lattice-${uid}`;
   return (
-    <svg viewBox="0 0 250 350" preserveAspectRatio="none" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <svg viewBox="0 0 240 360" preserveAspectRatio="none" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <defs>
-        <linearGradient id="pp-classic-base" x1="0" y1="0" x2="1" y2="1">
+        <linearGradient id={baseId} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor={CORAL} />
           <stop offset="100%" stopColor={CORAL_DEEP} />
         </linearGradient>
-        <pattern id="pp-classic-lattice" width="28" height="28" patternUnits="userSpaceOnUse">
+        <pattern id={latticeId} width="28" height="28" patternUnits="userSpaceOnUse">
           <path d="M0 14 L14 0 L28 14 L14 28 Z" fill="none" stroke={CREAM} strokeOpacity="0.35" strokeWidth="2" />
         </pattern>
       </defs>
-      <rect width="250" height="350" rx="16" fill="url(#pp-classic-base)" />
-      <rect x="14" y="14" width="222" height="322" rx="10" fill="url(#pp-classic-lattice)" />
-      <rect x="14" y="14" width="222" height="322" rx="10" fill="none" stroke={GOLD} strokeWidth="3" />
-      <rect x="6" y="6" width="238" height="338" rx="13" fill="none" stroke={CREAM} strokeOpacity="0.7" strokeWidth="2" />
+      <rect width="240" height="360" rx="16" fill={`url(#${baseId})`} />
+      <rect x="14" y="14" width="212" height="332" rx="10" fill={`url(#${latticeId})`} />
+      <rect x="14" y="14" width="212" height="332" rx="10" fill="none" stroke={GOLD} strokeWidth="3" />
+      <rect x="6" y="6" width="228" height="348" rx="13" fill="none" stroke={CREAM} strokeOpacity="0.7" strokeWidth="2" />
       {/* Gold center crest */}
-      <circle cx="125" cy="175" r="42" fill={GOLD} stroke={CREAM} strokeWidth="3" />
-      <circle cx="125" cy="175" r="33" fill="none" stroke={CORAL_DEEP} strokeWidth="2" />
-      <text x="125" y="190" textAnchor="middle" fontSize="38" fontWeight="700" fill={CORAL_DEEP} fontFamily="var(--font-display), 'Inter', sans-serif">
+      <circle cx="120" cy="180" r="42" fill={GOLD} stroke={CREAM} strokeWidth="3" />
+      <circle cx="120" cy="180" r="33" fill="none" stroke={CORAL_DEEP} strokeWidth="2" />
+      <text x="120" y="195" textAnchor="middle" fontSize="38" fontWeight="700" fill={CORAL_DEEP} fontFamily="var(--font-display), 'Inter', sans-serif">
         PP
       </text>
     </svg>
   );
-}
+});
 
-function GeometricBack() {
+const GeometricBack = React.memo(function GeometricBack() {
+  const uid = React.useId();
+  const trisId = `pp-geo-tris-${uid}`;
   return (
-    <svg viewBox="0 0 250 350" preserveAspectRatio="none" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <svg viewBox="0 0 240 360" preserveAspectRatio="none" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <defs>
-        <pattern id="pp-geo-tris" width="50" height="44" patternUnits="userSpaceOnUse">
+        <pattern id={trisId} width="50" height="44" patternUnits="userSpaceOnUse">
           <rect width="50" height="44" fill={FELT} />
           <path d="M0 44 L25 0 L50 44 Z" fill={FELT_DEEP} />
           <path d="M25 44 L37.5 22 L50 44 Z" fill={CREAM} fillOpacity="0.85" />
           <path d="M0 44 L12.5 22 L25 44 Z" fill={CREAM} fillOpacity="0.25" />
         </pattern>
       </defs>
-      <rect width="250" height="350" rx="16" fill={FELT_DEEP} />
-      <rect x="12" y="12" width="226" height="326" rx="10" fill="url(#pp-geo-tris)" />
-      <rect x="12" y="12" width="226" height="326" rx="10" fill="none" stroke={CREAM} strokeWidth="3" />
-      <rect x="5" y="5" width="240" height="340" rx="13" fill="none" stroke={CREAM} strokeOpacity="0.4" strokeWidth="2" />
+      <rect width="240" height="360" rx="16" fill={FELT_DEEP} />
+      <rect x="12" y="12" width="216" height="336" rx="10" fill={`url(#${trisId})`} />
+      <rect x="12" y="12" width="216" height="336" rx="10" fill="none" stroke={CREAM} strokeWidth="3" />
+      <rect x="5" y="5" width="230" height="350" rx="13" fill="none" stroke={CREAM} strokeOpacity="0.4" strokeWidth="2" />
       {/* Center diamond emblem */}
-      <rect x="99" y="149" width="52" height="52" rx="6" transform="rotate(45 125 175)" fill={CREAM} />
-      <text x="125" y="186" textAnchor="middle" fontSize="30" fontWeight="700" fill={FELT_DEEP} fontFamily="var(--font-display), 'Inter', sans-serif">
+      <rect x="94" y="154" width="52" height="52" rx="6" transform="rotate(45 120 180)" fill={CREAM} />
+      <text x="120" y="191" textAnchor="middle" fontSize="30" fontWeight="700" fill={FELT_DEEP} fontFamily="var(--font-display), 'Inter', sans-serif">
         PP
       </text>
     </svg>
   );
-}
+});
 
 // Deterministic star positions for the gradient back
 const STARS: [number, number, number][] = [
-  [40, 50, 3], [120, 35, 2], [200, 60, 3.5], [70, 110, 2], [180, 130, 2.5],
-  [35, 190, 2.5], [215, 200, 2], [90, 240, 3], [160, 270, 2], [55, 300, 2],
-  [200, 310, 3], [130, 175, 0],
+  [38, 52, 3], [115, 36, 2], [192, 62, 3.5], [67, 113, 2], [173, 134, 2.5],
+  [34, 195, 2.5], [206, 206, 2], [86, 247, 3], [154, 278, 2], [53, 309, 2],
+  [192, 319, 3],
 ];
 
-function GradientBack() {
+const GradientBack = React.memo(function GradientBack() {
+  const uid = React.useId();
+  const baseId = `pp-grad-base-${uid}`;
   return (
-    <svg viewBox="0 0 250 350" preserveAspectRatio="none" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <svg viewBox="0 0 240 360" preserveAspectRatio="none" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <defs>
-        <linearGradient id="pp-grad-base" x1="0" y1="0" x2="1" y2="1">
+        <linearGradient id={baseId} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor={CORAL} />
           <stop offset="100%" stopColor={PURPLE} />
         </linearGradient>
       </defs>
-      <rect width="250" height="350" rx="16" fill="url(#pp-grad-base)" />
-      <rect x="10" y="10" width="230" height="330" rx="11" fill="none" stroke={CREAM} strokeOpacity="0.6" strokeWidth="2" />
+      <rect width="240" height="360" rx="16" fill={`url(#${baseId})`} />
+      <rect x="10" y="10" width="220" height="340" rx="11" fill="none" stroke={CREAM} strokeOpacity="0.6" strokeWidth="2" />
       {/* Subtle star field */}
-      {STARS.filter(([, , r]) => r > 0).map(([x, y, r], i) => (
+      {STARS.map(([x, y, r], i) => (
         <g key={i} fill={CREAM} opacity={0.65}>
           <path d={`M${x} ${y - r * 2} Q${x + r * 0.5} ${y - r * 0.5} ${x + r * 2} ${y} Q${x + r * 0.5} ${y + r * 0.5} ${x} ${y + r * 2} Q${x - r * 0.5} ${y + r * 0.5} ${x - r * 2} ${y} Q${x - r * 0.5} ${y - r * 0.5} ${x} ${y - r * 2} Z`} />
         </g>
       ))}
       {/* Crescent moon center */}
-      <circle cx="125" cy="175" r="26" fill={CREAM} fillOpacity="0.9" />
-      <circle cx="134" cy="168" r="22" fill={CORAL} fillOpacity="0.55" />
-      <circle cx="134" cy="168" r="22" fill={PURPLE} fillOpacity="0.5" />
+      <circle cx="120" cy="180" r="26" fill={CREAM} fillOpacity="0.9" />
+      <circle cx="129" cy="173" r="22" fill={CORAL} fillOpacity="0.55" />
+      <circle cx="129" cy="173" r="22" fill={PURPLE} fillOpacity="0.5" />
     </svg>
   );
-}
+});
 
-function MinimalBack() {
+const MinimalBack = React.memo(function MinimalBack() {
   return (
-    <svg viewBox="0 0 250 350" preserveAspectRatio="none" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <rect width="250" height="350" rx="16" fill={CREAM} />
-      <rect x="14" y="14" width="222" height="322" rx="10" fill="none" stroke={CORAL} strokeWidth="3" />
+    <svg viewBox="0 0 240 360" preserveAspectRatio="none" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <rect width="240" height="360" rx="16" fill={CREAM} />
+      <rect x="14" y="14" width="212" height="332" rx="10" fill="none" stroke={CORAL} strokeWidth="3" />
       {/* Single coral heart pip */}
       <path
-        d="M125 196 C103 178 96 164 96 152 C96 139 106 131 116 131 C121 131 125 134 125 138 C125 134 129 131 134 131 C144 131 154 139 154 152 C154 164 147 178 125 196 Z"
+        d="M120 201 C98 183 91 169 91 157 C91 144 101 136 111 136 C116 136 120 139 120 143 C120 139 124 136 129 136 C139 136 149 144 149 157 C149 169 142 183 120 201 Z"
         fill={CORAL}
       />
-      <circle cx="125" cy="220" r="3" fill={CORAL_DEEP} />
+      <circle cx="120" cy="225" r="3" fill={CORAL_DEEP} />
     </svg>
   );
-}
+});
 
 export default function CardBackDesign({ style, size, className = '' }: CardBackDesignProps) {
   const sizeClasses = {
@@ -134,13 +143,10 @@ export default function CardBackDesign({ style, size, className = '' }: CardBack
   return (
     <div
       className={clsx(
-        'relative rounded-xl overflow-hidden',
+        'relative rounded-xl overflow-hidden shadow-card',
         sizeClasses[size],
         className
       )}
-      style={{
-        boxShadow: '0 4px 12px -2px rgba(45,49,66,0.2), 0 2px 4px -2px rgba(45,49,66,0.1)'
-      }}
     >
       {designs[style]}
     </div>

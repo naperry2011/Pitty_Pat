@@ -21,23 +21,24 @@ const SUIT_COLORS: Record<Suit, string> = {
   spades: '#2D3142',
 };
 
-// Pip grid: columns x = 70 / 125 / 180, rows y = 70 / 125 / 175 / 225 / 280
-// (10 uses half-row centers 97.5 / 252.5 to match real playing-card layout).
-const L = 70;
-const C = 125;
-const R = 180;
+// Pip grid (240x360 viewBox, exact 2:3 card ratio):
+// columns x = 66 / 120 / 174, rows y = 72 / 126 / 180 / 234 / 288
+// (10 uses half-row centers 99 / 261 to match real playing-card layout).
+const L = 66;
+const C = 120;
+const R = 174;
 
 const PIP_LAYOUTS: Partial<Record<Rank, [number, number][]>> = {
-  'A': [[C, 175]],
-  '2': [[C, 70], [C, 280]],
-  '3': [[C, 70], [C, 175], [C, 280]],
-  '4': [[L, 70], [R, 70], [L, 280], [R, 280]],
-  '5': [[L, 70], [R, 70], [C, 175], [L, 280], [R, 280]],
-  '6': [[L, 70], [R, 70], [L, 175], [R, 175], [L, 280], [R, 280]],
-  '7': [[L, 70], [R, 70], [C, 125], [L, 175], [R, 175], [L, 280], [R, 280]],
-  '8': [[L, 70], [R, 70], [C, 125], [L, 175], [R, 175], [C, 225], [L, 280], [R, 280]],
-  '9': [[L, 70], [R, 70], [L, 125], [R, 125], [C, 175], [L, 225], [R, 225], [L, 280], [R, 280]],
-  '10': [[L, 70], [R, 70], [C, 97.5], [L, 125], [R, 125], [L, 225], [R, 225], [C, 252.5], [L, 280], [R, 280]],
+  'A': [[C, 180]],
+  '2': [[C, 72], [C, 288]],
+  '3': [[C, 72], [C, 180], [C, 288]],
+  '4': [[L, 72], [R, 72], [L, 288], [R, 288]],
+  '5': [[L, 72], [R, 72], [C, 180], [L, 288], [R, 288]],
+  '6': [[L, 72], [R, 72], [L, 180], [R, 180], [L, 288], [R, 288]],
+  '7': [[L, 72], [R, 72], [C, 126], [L, 180], [R, 180], [L, 288], [R, 288]],
+  '8': [[L, 72], [R, 72], [C, 126], [L, 180], [R, 180], [C, 234], [L, 288], [R, 288]],
+  '9': [[L, 72], [R, 72], [L, 126], [R, 126], [C, 180], [L, 234], [R, 234], [L, 288], [R, 288]],
+  '10': [[L, 72], [R, 72], [C, 99], [L, 126], [R, 126], [L, 234], [R, 234], [C, 261], [L, 288], [R, 288]],
 };
 
 // Simple gold motifs drawn above the face-card display letter.
@@ -45,30 +46,30 @@ const FACE_MOTIFS: Record<'J' | 'Q' | 'K', React.ReactNode> = {
   // Feather for the Jack
   J: (
     <g stroke="#F4B942" strokeWidth="6" fill="none" strokeLinecap="round">
-      <path d="M95 130 Q125 70 160 95 Q150 135 105 138 Z" fill="#F4B942" stroke="none" />
-      <path d="M95 130 Q125 95 155 98" stroke="#FFF8F0" strokeWidth="3" />
-      <path d="M95 130 L82 145" />
+      <path d="M90 135 Q120 75 155 100 Q145 140 100 143 Z" fill="#F4B942" stroke="none" />
+      <path d="M90 135 Q120 100 150 103" stroke="#FFF8F0" strokeWidth="3" />
+      <path d="M90 135 L77 150" />
     </g>
   ),
   // Tiara for the Queen
   Q: (
     <g fill="#F4B942">
-      <path d="M75 135 L85 100 L105 122 L125 88 L145 122 L165 100 L175 135 Z" />
-      <circle cx="85" cy="96" r="6" />
-      <circle cx="125" cy="84" r="6" />
-      <circle cx="165" cy="96" r="6" />
+      <path d="M70 140 L80 105 L100 127 L120 93 L140 127 L160 105 L170 140 Z" />
+      <circle cx="80" cy="101" r="6" />
+      <circle cx="120" cy="89" r="6" />
+      <circle cx="160" cy="101" r="6" />
     </g>
   ),
   // Crown for the King
   K: (
     <g fill="#F4B942">
-      <path d="M72 138 L72 95 L96 115 L125 82 L154 115 L178 95 L178 138 Z" />
-      <rect x="72" y="138" width="106" height="10" rx="3" />
+      <path d="M67 143 L67 100 L91 120 L120 87 L149 120 L173 100 L173 143 Z" />
+      <rect x="67" y="143" width="106" height="10" rx="3" />
     </g>
   ),
 };
 
-export default function CardFace({ rank, suit, className }: CardFaceProps) {
+function CardFace({ rank, suit, className }: CardFaceProps) {
   const color = SUIT_COLORS[suit];
   const glyph = SUIT_GLYPHS[suit];
   const pips = PIP_LAYOUTS[rank];
@@ -76,7 +77,7 @@ export default function CardFace({ rank, suit, className }: CardFaceProps) {
 
   return (
     <svg
-      viewBox="0 0 250 350"
+      viewBox="0 0 240 360"
       preserveAspectRatio="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
@@ -86,12 +87,12 @@ export default function CardFace({ rank, suit, className }: CardFaceProps) {
       aria-label={`${rank} of ${suit}`}
     >
       {/* Card base with subtle edge highlight */}
-      <rect x="0" y="0" width="250" height="350" rx="16" fill="#FFFFFF" />
+      <rect x="0" y="0" width="240" height="360" rx="16" fill="#FFFFFF" />
       <rect
         x="1.5"
         y="1.5"
-        width="247"
-        height="347"
+        width="237"
+        height="357"
         rx="14.5"
         fill="none"
         stroke="rgba(45,49,66,0.12)"
@@ -100,8 +101,8 @@ export default function CardFace({ rank, suit, className }: CardFaceProps) {
       <rect
         x="3"
         y="3"
-        width="244"
-        height="344"
+        width="234"
+        height="354"
         rx="13"
         fill="none"
         stroke="rgba(255,255,255,0.9)"
@@ -110,24 +111,24 @@ export default function CardFace({ rank, suit, className }: CardFaceProps) {
 
       {/* Corner indices: top-left, and a 180-degree copy at bottom-right */}
       <g fill={color} textAnchor="middle">
-        <text x="27" y="42" fontSize="38" fontWeight="700" fontFamily="var(--font-display), 'Inter', sans-serif">
+        <text x="26" y="44" fontSize="46" fontWeight="700" fontFamily="var(--font-display), 'Inter', sans-serif">
           {rank}
         </text>
-        <text x="27" y="74" fontSize="28">{glyph}</text>
+        <text x="26" y="78" fontSize="32">{glyph}</text>
       </g>
-      <g fill={color} textAnchor="middle" transform="rotate(180 125 175)">
-        <text x="27" y="42" fontSize="38" fontWeight="700" fontFamily="var(--font-display), 'Inter', sans-serif">
+      <g fill={color} textAnchor="middle" transform="rotate(180 120 180)">
+        <text x="26" y="44" fontSize="46" fontWeight="700" fontFamily="var(--font-display), 'Inter', sans-serif">
           {rank}
         </text>
-        <text x="27" y="74" fontSize="28">{glyph}</text>
+        <text x="26" y="78" fontSize="32">{glyph}</text>
       </g>
 
       {isFaceCard ? (
         <>
           {FACE_MOTIFS[rank]}
           <text
-            x="125"
-            y="262"
+            x="120"
+            y="268"
             textAnchor="middle"
             fontSize="130"
             fontWeight="700"
@@ -149,7 +150,7 @@ export default function CardFace({ rank, suit, className }: CardFaceProps) {
               y={y}
               fontSize={rank === 'A' ? 110 : 52}
               // Pips below the card midline render upside-down, like a real deck
-              transform={y > 175 ? `rotate(180 ${x} ${y})` : undefined}
+              transform={y > 180 ? `rotate(180 ${x} ${y})` : undefined}
               dominantBaseline="central"
             >
               {glyph}
@@ -160,3 +161,6 @@ export default function CardFace({ rank, suit, className }: CardFaceProps) {
     </svg>
   );
 }
+
+// Pure render component keyed on two strings + className: exact memo win.
+export default React.memo(CardFace);

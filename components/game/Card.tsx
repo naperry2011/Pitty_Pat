@@ -64,14 +64,15 @@ export default function Card({
         'rounded-xl relative no-select overflow-hidden',
         sizeClasses[size],
         isClickable && 'cursor-pointer card-interactive',
-        isSelected && 'selected-glow -translate-y-3 z-20',
+        // Resting cards use the shadow-card elevation token; selected keeps its ring
+        isSelected ? 'selected-glow -translate-y-3 z-20' : 'shadow-card',
         className
       )}
       onClick={isClickable ? onClick : undefined}
       style={{
-        boxShadow: isSelected
-          ? '0 0 0 3px #FFE66D, 0 8px 24px -4px rgba(0,0,0,0.25)'
-          : '0 4px 12px -2px rgba(0,0,0,0.15), 0 2px 4px -2px rgba(0,0,0,0.1)',
+        ...(isSelected && {
+          boxShadow: '0 0 0 3px #FFE66D, 0 8px 24px -4px rgba(0,0,0,0.25)'
+        }),
         ...style
       }}
     >
