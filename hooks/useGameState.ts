@@ -16,7 +16,7 @@ import { createPlaceholderGameState } from '@/lib/initial-state';
 import { logGameState } from '@/lib/debug-helper';
 
 // Game reducer to handle state transitions
-function gameReducer(state: GameState, action: GameAction): GameState {
+export function gameReducer(state: GameState, action: GameAction): GameState {
   const newState: GameState = (() => {
     switch (action.type) {
       case 'START_GAME':
@@ -99,6 +99,7 @@ export function useGameState(aiDifficulty: AIDifficulty = 'easy', matchTarget = 
       isInitialized.current = true;
       dispatch({ type: 'START_GAME', matchTarget });
     }
+    // matchTarget changes after init are intentionally ignored (isInitialized ref guards re-init).
   }, [matchTarget]);
 
   // Handle drawing a card
