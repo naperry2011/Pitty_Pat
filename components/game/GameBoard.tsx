@@ -8,6 +8,7 @@ import Deck from './Deck';
 import DiscardPile from './DiscardPile';
 import CardStyleSelector from './CardStyleSelector';
 import { findPlayableCards } from '@/lib/game-engine';
+import { GameSettings } from '@/lib/settings';
 import clsx from 'clsx';
 
 // Confetti component for win celebration
@@ -42,14 +43,37 @@ function Confetti() {
   );
 }
 
-export default function GameBoard() {
+// Round-win pips: one dot per round needed, filled per wins so far.
+function WinPips({ wins, target, filledClass }: { wins: number; target: number; filledClass: string }) {
+  return (
+    <span className="flex gap-0.5" aria-label={`${wins} of ${target} rounds won`}>
+      {Array.from({ length: target }, (_, i) => (
+        <span
+          key={i}
+          className={clsx(
+            'inline-block w-2 h-2 rounded-full',
+            i < wins ? filledClass : 'bg-gray-300'
+          )}
+        />
+      ))}
+    </span>
+  );
+}
+
+interface GameBoardProps {
+  settings: GameSettings;
+  onChangeSettings: () => void;
+}
+
+export default function GameBoard({ settings, onChangeSettings }: GameBoardProps) {
   const {
     gameState,
     handleDrawCard,
     handleCardTap,
     handleClearSelection,
+    handleNewGame,
     handleRestartRound
-  } = useGameState('easy');
+  } = useGameState(settings.difficulty, settings.matchTarget);
   const [showInstructions, setShowInstructions] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
 
@@ -97,6 +121,49 @@ export default function GameBoard() {
       {/* Confetti celebration */}
       {showConfetti && <Confetti />}
 
+      {/* Match over overlay */}
+      {gameState.phase === 'gameEnd' && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center px-4"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="bg-white rounded-3xl shadow-playful p-6 sm:p-8 max-w-sm w-full flex flex-col items-center gap-5 animate-pop">
+            <h2 className="text-2xl sm:text-3xl font-black text-center text-gray-800">
+              {gameState.winner === humanPlayer?.id
+                ? 'You win the match! 🏆'
+                : 'Computer wins the match! 🤖'}
+            </h2>
+
+            {/* Final pip score */}
+            <div className="flex gap-4">
+              <div className="flex flex-col items-center gap-1.5">
+                <span className="text-coral font-bold text-sm">You</span>
+                <WinPips wins={humanPlayer?.wins || 0} target={gameState.matchTarget} filledClass="bg-coral" />
+              </div>
+              <div className="flex flex-col items-center gap-1.5">
+                <span className="text-suit-spades font-bold text-sm">CPU</span>
+                <WinPips wins={aiPlayer?.wins || 0} target={gameState.matchTarget} filledClass="bg-slate-600" />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3 w-full items-center">
+              <button
+                onClick={handleNewGame}
+                className="btn-playful text-lg touch-target"
+              >
+                Rematch 🔄
+              </button>
+              <button
+                onClick={onChangeSettings}
+                className="bg-white/80 text-gray-700 font-bold px-6 py-2.5 rounded-2xl shadow-soft active:scale-95 transition-transform touch-target"
+              >
+                Change settings
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main Content - Mobile-first stacked layout */}
       <div className="max-w-lg mx-auto flex flex-col min-h-screen px-3 py-4 safe-area-top safe-area-bottom">
 
@@ -116,13 +183,15 @@ export default function GameBoard() {
             Pitty Pat
           </h1>
 
-          {/* Compact Score */}
+          {/* Compact Score with round-win pips */}
           <div className="flex gap-2">
-            <div className="bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-xl shadow-soft">
-              <span className="text-coral font-bold text-sm">You: {humanPlayer?.wins || 0}</span>
+            <div className="bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-xl shadow-soft flex flex-col items-center gap-1">
+              <span className="text-coral font-bold text-xs leading-none">You</span>
+              <WinPips wins={humanPlayer?.wins || 0} target={gameState.matchTarget} filledClass="bg-coral" />
             </div>
-            <div className="bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-xl shadow-soft">
-              <span className="text-suit-spades font-bold text-sm">CPU: {aiPlayer?.wins || 0}</span>
+            <div className="bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-xl shadow-soft flex flex-col items-center gap-1">
+              <span className="text-suit-spades font-bold text-xs leading-none">CPU</span>
+              <WinPips wins={aiPlayer?.wins || 0} target={gameState.matchTarget} filledClass="bg-slate-600" />
             </div>
           </div>
         </div>
