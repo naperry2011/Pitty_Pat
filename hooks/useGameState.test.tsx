@@ -31,6 +31,17 @@ describe('useGameState', () => {
     expect(result.current.gameState.turnAction).toBe('draw');
   });
 
+  test('passes the match target into the initial game state', () => {
+    const { result } = renderHook(() => useGameState('easy', 3));
+    expect(result.current.gameState.matchTarget).toBe(3);
+  });
+
+  test('handleNewGame resets wins for a rematch', () => {
+    const { result } = renderHook(() => useGameState('easy', 3));
+    act(() => { result.current.handleNewGame(); });
+    expect(result.current.gameState.players[0].wins).toBe(0);
+  });
+
   test('AI turns are decided by getAIDecision with the configured difficulty', () => {
     const { result } = renderHook(() => useGameState('hard'));
 

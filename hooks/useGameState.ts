@@ -20,7 +20,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
   const newState: GameState = (() => {
     switch (action.type) {
       case 'START_GAME':
-        return createInitialGameState('Player');
+        return createInitialGameState('Player', action.matchTarget);
 
     case 'RESTART_GAME': {
       // Start a new round with same players
@@ -89,7 +89,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
   return newState;
 }
 
-export function useGameState(aiDifficulty: AIDifficulty = 'easy') {
+export function useGameState(aiDifficulty: AIDifficulty = 'easy', matchTarget = 5) {
   const isInitialized = useRef(false);
   const [gameState, dispatch] = useReducer(gameReducer, createPlaceholderGameState());
 
@@ -97,9 +97,9 @@ export function useGameState(aiDifficulty: AIDifficulty = 'easy') {
   useEffect(() => {
     if (!isInitialized.current) {
       isInitialized.current = true;
-      dispatch({ type: 'START_GAME' });
+      dispatch({ type: 'START_GAME', matchTarget });
     }
-  }, []);
+  }, [matchTarget]);
 
   // Handle drawing a card
   const handleDrawCard = useCallback(() => {
@@ -150,8 +150,8 @@ export function useGameState(aiDifficulty: AIDifficulty = 'easy') {
 
   // Handle starting a new game
   const handleNewGame = useCallback(() => {
-    dispatch({ type: 'START_GAME' });
-  }, []);
+    dispatch({ type: 'START_GAME', matchTarget });
+  }, [matchTarget]);
 
   // Handle restarting after a round
   const handleRestartRound = useCallback(() => {

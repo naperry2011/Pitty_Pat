@@ -37,7 +37,7 @@ export interface GameState {
 
 // Game action types for reducer
 export type GameAction =
-  | { type: 'START_GAME' }
+  | { type: 'START_GAME'; matchTarget: number }
   | { type: 'RESTART_GAME' }
   | { type: 'DRAW_CARD' }
   | { type: 'PLAY_CARD'; cardId: string }
