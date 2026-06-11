@@ -5,6 +5,7 @@ import { Card as CardType } from '@/types';
 import clsx from 'clsx';
 import { useCardStyle } from '@/contexts/CardStyleContext';
 import CardBackDesign from './CardBackDesign';
+import CardFace from './CardFace';
 
 interface CardProps {
   card: CardType;
@@ -28,21 +29,6 @@ export default function Card({
   isPlayable = false
 }: CardProps) {
   const { cardBackStyle } = useCardStyle();
-
-  const suitSymbols = {
-    hearts: '♥',
-    diamonds: '♦',
-    clubs: '♣',
-    spades: '♠'
-  };
-
-  // Rich, vibrant suit colors
-  const suitColorClasses = {
-    hearts: 'text-red-500',
-    diamonds: 'text-orange-500',
-    clubs: 'text-emerald-600',
-    spades: 'text-indigo-600'
-  };
 
   // Size classes - responsive uses viewport-based sizing
   const sizeClasses = {
@@ -71,7 +57,7 @@ export default function Card({
     );
   }
 
-  // Card front - premium solid design
+  // Card front - SVG playing card face
   return (
     <div
       className={clsx(
@@ -89,32 +75,15 @@ export default function Card({
         ...style
       }}
     >
-      {/* Card base - solid white with subtle gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-white via-white to-gray-50 rounded-xl" />
+      <CardFace rank={card.rank} suit={card.suit} />
 
       {/* Card border */}
       <div
         className={clsx(
           "absolute inset-0 rounded-xl border-2",
-          isSelected ? "border-yellow-400" : isPlayable ? "border-yellow-300" : "border-gray-200"
+          isSelected ? "border-yellow-400" : isPlayable ? "border-yellow-300" : "border-transparent"
         )}
       />
-
-      {/* Subtle card texture pattern */}
-      <div className="absolute inset-0 opacity-[0.03] rounded-xl"
-        style={{
-          backgroundImage: `repeating-linear-gradient(
-            45deg,
-            transparent,
-            transparent 2px,
-            #000 2px,
-            #000 4px
-          )`
-        }}
-      />
-
-      {/* Inner decorative border for premium look */}
-      <div className="absolute inset-[3px] rounded-lg border border-gray-100" />
 
       {/* Playable indicator glow */}
       {isPlayable && !isSelected && (
@@ -125,24 +94,6 @@ export default function Card({
       {!isPlayable && isClickable && (
         <div className="absolute inset-0 rounded-xl bg-gray-400/20" />
       )}
-
-      {/* Card content */}
-      <div className={clsx('relative h-full flex flex-col items-center justify-center', suitColorClasses[card.suit])}>
-        {/* Top left corner */}
-        <div className="absolute top-1 left-1.5 flex flex-col items-center leading-none">
-          <span className="font-black text-[0.75em] drop-shadow-sm">{card.rank}</span>
-          <span className="text-[0.6em]">{suitSymbols[card.suit]}</span>
-        </div>
-
-        {/* Center suit symbol - larger and bolder */}
-        <div className="text-[2em] drop-shadow-sm">{suitSymbols[card.suit]}</div>
-
-        {/* Bottom right corner */}
-        <div className="absolute bottom-1 right-1.5 flex flex-col items-center leading-none rotate-180">
-          <span className="font-black text-[0.75em] drop-shadow-sm">{card.rank}</span>
-          <span className="text-[0.6em]">{suitSymbols[card.suit]}</span>
-        </div>
-      </div>
 
       {/* Selected indicator */}
       {isSelected && (
