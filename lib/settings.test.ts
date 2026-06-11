@@ -15,4 +15,12 @@ describe('settings', () => {
     localStorage.setItem('gameSettings', '{"difficulty":"impossible","matchTarget":7}');
     expect(loadSettings()).toEqual(DEFAULT_SETTINGS);
   });
+  test('returns defaults when stored value is not JSON', () => {
+    localStorage.setItem('gameSettings', 'not json');
+    expect(loadSettings()).toEqual(DEFAULT_SETTINGS);
+  });
+  test('falls back to default soundMuted when stored value has wrong type', () => {
+    localStorage.setItem('gameSettings', '{"difficulty":"hard","matchTarget":3,"soundMuted":"yes"}');
+    expect(loadSettings()).toEqual({ difficulty: 'hard', matchTarget: 3, soundMuted: false });
+  });
 });

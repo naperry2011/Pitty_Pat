@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useGameState } from '@/hooks/useGameState';
 import Hand from './Hand';
@@ -76,6 +76,14 @@ export default function GameBoard({ settings, onChangeSettings }: GameBoardProps
   } = useGameState(settings.difficulty, settings.matchTarget);
   const [showInstructions, setShowInstructions] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
+  const rematchButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Move focus into the match-over dialog when it mounts
+  useEffect(() => {
+    if (gameState.phase === 'gameEnd') {
+      rematchButtonRef.current?.focus();
+    }
+  }, [gameState.phase]);
 
   const currentPlayer = gameState.players[gameState.currentPlayerIndex];
   const humanPlayer = gameState.players.find(p => !p.isAI);
@@ -124,11 +132,14 @@ export default function GameBoard({ settings, onChangeSettings }: GameBoardProps
       {/* Match over overlay */}
       {gameState.phase === 'gameEnd' && (
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="match-over-title"
           className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center px-4"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="bg-white rounded-3xl shadow-playful p-6 sm:p-8 max-w-sm w-full flex flex-col items-center gap-5 animate-pop">
-            <h2 className="text-2xl sm:text-3xl font-black text-center text-gray-800">
+            <h2 id="match-over-title" className="text-2xl sm:text-3xl font-black text-center text-gray-800">
               {gameState.winner === humanPlayer?.id
                 ? 'You win the match! 🏆'
                 : 'Computer wins the match! 🤖'}
@@ -148,6 +159,7 @@ export default function GameBoard({ settings, onChangeSettings }: GameBoardProps
 
             <div className="flex flex-col gap-3 w-full items-center">
               <button
+                ref={rematchButtonRef}
                 onClick={handleNewGame}
                 className="btn-playful text-lg touch-target"
               >
