@@ -18,6 +18,8 @@ export function CardStyleProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const saved = localStorage.getItem('cardBackStyle');
     if (saved && ['classic', 'geometric', 'gradient', 'minimal'].includes(saved)) {
+      // Hydration-safe restore: SSR renders the default, the saved style applies after mount.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCardBackStyle(saved as CardBackStyle);
     }
   }, []);

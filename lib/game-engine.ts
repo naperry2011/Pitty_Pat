@@ -36,7 +36,7 @@ export function dealCards(deck: Card[], numPlayers: number, cardsPerPlayer: numb
   discardPile: Card[];
 } {
   const playerHands: Card[][] = [];
-  let currentDeck = [...deck];
+  const currentDeck = [...deck];
 
   // Deal cards to each player
   for (let i = 0; i < numPlayers; i++) {
@@ -69,40 +69,38 @@ export function findPlayableCards(hand: Card[], topDiscard: Card): Card[] {
 
 // Draw a card from the deck
 export function drawCard(state: GameState): GameState {
-  if (state.deck.length === 0) {
-    // Reshuffle discard pile if deck is empty (keep top card)
-    if (state.discardPile.length <= 1) {
+  let deck = state.deck;
+  let discardPile = state.discardPile;
+
+  if (deck.length === 0) {
+    // Reshuffle discard pile into a new deck (keep top card), then draw from it
+    if (discardPile.length <= 1) {
       // No cards to reshuffle
       return state;
     }
 
-    const topCard = state.discardPile[state.discardPile.length - 1];
-    const cardsToShuffle = state.discardPile.slice(0, -1).map(card => ({
+    const topCard = discardPile[discardPile.length - 1];
+    const cardsToShuffle = discardPile.slice(0, -1).map(card => ({
       ...card,
       faceUp: false
     }));
-    const reshuffled = shuffleDeck(cardsToShuffle);
-
-    return {
-      ...state,
-      deck: reshuffled,
-      discardPile: [topCard]
-    };
+    deck = shuffleDeck(cardsToShuffle);
+    discardPile = [topCard];
   }
 
-  const drawnCard = { ...state.deck[0], faceUp: true };
-  const newDeck = state.deck.slice(1);
+  const drawnCard = { ...deck[0], faceUp: true };
+  const newDeck = deck.slice(1);
   const currentPlayer = state.players[state.currentPlayerIndex];
 
   // Check if drawn card matches top discard
-  const topDiscard = state.discardPile[state.discardPile.length - 1];
+  const topDiscard = discardPile[discardPile.length - 1];
 
   if (canPlayCard(drawnCard, topDiscard)) {
     // Auto-play the matching card
     return {
       ...state,
       deck: newDeck,
-      discardPile: [...state.discardPile, drawnCard],
+      discardPile: [...discardPile, drawnCard],
       turnAction: 'waiting',
       message: `${currentPlayer.name} drew and played a ${drawnCard.rank}!`
     };
@@ -112,7 +110,7 @@ export function drawCard(state: GameState): GameState {
     return {
       ...state,
       deck: newDeck,
-      discardPile: [...state.discardPile, drawnCard],
+      discardPile: [...discardPile, drawnCard],
       turnAction: 'waiting',
       message: `${currentPlayer.name} drew and discarded a ${drawnCard.rank}`
     };
@@ -184,7 +182,7 @@ export function endTurn(state: GameState): GameState {
   return {
     ...state,
     currentPlayerIndex: nextPlayerIndex,
-    turnAction: nextPlayer.isAI ? 'waiting' : 'draw',
+    turnAction: 'draw',
     message: `${nextPlayer.name}'s turn`
   };
 }

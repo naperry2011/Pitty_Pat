@@ -1,6 +1,6 @@
 'use client';
 
-import { useReducer, useCallback, useEffect, useState } from 'react';
+import { useReducer, useCallback, useEffect, useRef } from 'react';
 import { GameState, GameAction } from '@/types';
 import {
   createInitialGameState,
@@ -11,7 +11,7 @@ import {
   createDeck,
   dealCards
 } from '@/lib/game-engine';
-import { executeAITurn, AIDifficulty } from '@/lib/ai-player';
+import { getAIDecision, AIDifficulty } from '@/lib/ai-player';
 import { createPlaceholderGameState } from '@/lib/initial-state';
 import { logGameState } from '@/lib/debug-helper';
 
@@ -90,26 +90,21 @@ function gameReducer(state: GameState, action: GameAction): GameState {
 }
 
 export function useGameState(aiDifficulty: AIDifficulty = 'easy') {
-  const [isInitialized, setIsInitialized] = useState(false);
+  const isInitialized = useRef(false);
   const [gameState, dispatch] = useReducer(gameReducer, createPlaceholderGameState());
 
   // Initialize game after mount to avoid hydration issues
   useEffect(() => {
-    if (!isInitialized) {
+    if (!isInitialized.current) {
+      isInitialized.current = true;
       dispatch({ type: 'START_GAME' });
-      setIsInitialized(true);
     }
-  }, [isInitialized]);
+  }, []);
 
   // Handle drawing a card
   const handleDrawCard = useCallback(() => {
     if (gameState.turnAction === 'draw' && gameState.phase === 'playing') {
       dispatch({ type: 'DRAW_CARD' });
-
-      // Auto end turn after drawing
-      setTimeout(() => {
-        dispatch({ type: 'END_TURN' });
-      }, 500);
     }
   }, [gameState.turnAction, gameState.phase]);
 
@@ -129,10 +124,6 @@ export function useGameState(aiDifficulty: AIDifficulty = 'easy') {
 
       if (card && topDiscard && card.rank === topDiscard.rank) {
         dispatch({ type: 'PLAY_CARD', cardId });
-        // Always end turn after a successful play
-        setTimeout(() => {
-          dispatch({ type: 'END_TURN' });
-        }, 100);
       }
     }
   }, [gameState]);
@@ -167,40 +158,40 @@ export function useGameState(aiDifficulty: AIDifficulty = 'easy') {
     dispatch({ type: 'RESTART_GAME' });
   }, []);
 
-  // Handle AI turns
+  // End the turn once the current player's action resolves.
+  // Turn advancement has a single source: PLAY_CARD/DRAW_CARD set turnAction
+  // to 'waiting', and only this effect dispatches END_TURN.
   useEffect(() => {
-    // Check if it's AI's turn
-    if (gameState.phase !== 'playing') return;
+    if (gameState.phase !== 'playing' || gameState.turnAction !== 'waiting') return;
+
+    const timer = setTimeout(() => {
+      dispatch({ type: 'END_TURN' });
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [gameState.phase, gameState.turnAction]);
+
+  // Handle AI turns: act only while the AI actually holds a 'draw' action
+  useEffect(() => {
+    if (gameState.phase !== 'playing' || gameState.turnAction !== 'draw') return;
 
     const currentPlayer = gameState.players[gameState.currentPlayerIndex];
     if (!currentPlayer || !currentPlayer.isAI) return;
 
-    // Set a timeout for AI move
+    // Thinking delay for realism
     const timer = setTimeout(() => {
-      const topDiscard = gameState.discardPile[gameState.discardPile.length - 1];
-      if (!topDiscard) return;
+      const decision = getAIDecision(gameState, aiDifficulty);
 
-      const aiHand = currentPlayer.hand;
-      const playableCards = aiHand.filter(card => card.rank === topDiscard.rank);
-
-      if (playableCards.length > 0) {
-        // AI can play a card - choose randomly for variety
-        const cardToPlay = playableCards[Math.floor(Math.random() * playableCards.length)];
-        dispatch({ type: 'PLAY_CARD', cardId: cardToPlay.id });
+      if (decision.action === 'play' && decision.cardId) {
+        dispatch({ type: 'PLAY_CARD', cardId: decision.cardId });
       } else {
-        // AI must draw
         dispatch({ type: 'DRAW_CARD' });
       }
-
-      // End AI turn
-      setTimeout(() => {
-        dispatch({ type: 'END_TURN' });
-      }, 300);
     }, 1200);
 
     // Cleanup timeout on unmount or when dependencies change
     return () => clearTimeout(timer);
-  }, [gameState.currentPlayerIndex, gameState.phase, gameState.players, gameState.discardPile]);
+  }, [gameState, aiDifficulty]);
 
   return {
     gameState,

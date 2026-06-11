@@ -19,7 +19,7 @@ export interface Player {
 }
 
 // Game state types
-export type GamePhase = 'waiting' | 'playing' | 'roundEnd' | 'gameEnd';
+export type GamePhase = 'waiting' | 'playing' | 'roundEnd';
 export type TurnAction = 'draw' | 'play' | 'waiting';
 
 export interface GameState {
@@ -38,23 +38,8 @@ export interface GameState {
 export type GameAction =
   | { type: 'START_GAME' }
   | { type: 'RESTART_GAME' }
-  | { type: 'DEAL_CARDS' }
   | { type: 'DRAW_CARD' }
   | { type: 'PLAY_CARD'; cardId: string }
   | { type: 'SELECT_CARD'; cardId: string | null }  // For two-tap selection
-  | { type: 'AI_TURN' }
   | { type: 'END_TURN' }
-  | { type: 'END_ROUND'; winnerId: string }
   | { type: 'UPDATE_MESSAGE'; message: string };
-
-// UI-related types
-export interface Position {
-  x: number;
-  y: number;
-}
-
-export interface AnimationState {
-  isAnimating: boolean;
-  type: 'deal' | 'draw' | 'play' | 'flip' | null;
-  cardId?: string;
-}

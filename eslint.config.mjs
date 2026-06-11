@@ -1,27 +1,17 @@
-import js from "@eslint/js";
-import globals from "globals";
+import { defineConfig } from "eslint/config";
+import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
+import nextTypescript from "eslint-config-next/typescript";
 
-export default [
-  js.configs.recommended,
+export default defineConfig([
+  ...nextCoreWebVitals,
+  ...nextTypescript,
   {
-    languageOptions: {
-      globals: {
-        ...globals.browser,
-        ...globals.node,
-        React: "readonly",
-        JSX: "readonly",
-      },
-      parserOptions: {
-        ecmaFeatures: {
-          jsx: true,
-        },
-      },
-    },
     rules: {
-      "no-unused-vars": ["warn", { varsIgnorePattern: "^_", argsIgnorePattern: "^_" }],
+      // Stylistic only; literal apostrophes in JSX copy are fine.
+      "react/no-unescaped-entities": "off",
     },
   },
   {
-    ignores: [".next/**", "node_modules/**"],
+    ignores: [".next/**", "node_modules/**", "out/**", "build/**"],
   },
-];
+]);

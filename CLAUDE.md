@@ -10,11 +10,13 @@ npm run dev          # Start dev server at localhost:3000
 npm run build        # Production build
 npm run start        # Run production server
 npm run lint         # Run ESLint
+npm run typecheck    # TypeScript check (tsc --noEmit)
+npm run test         # Run unit tests (Vitest)
 ```
 
 ## Tech Stack
 
-- **Next.js 15** with App Router and React 19
+- **Next.js 16** with App Router and React 19
 - **TypeScript** (strict mode enabled)
 - **Tailwind CSS** for styling
 - Path aliases configured: use `@/` for imports (e.g., `@/components/game/Card`)
@@ -28,8 +30,10 @@ npm run lint         # Run ESLint
 
 ### Core Logic Separation
 - `lib/game-engine.ts` - Pure functions for game rules: shuffle, deal, canPlayCard, playCard, drawCard, endTurn
-- `lib/ai-player.ts` - AI decision-making with difficulty levels (easy/medium/hard)
+- `lib/ai-player.ts` - AI decision-making with difficulty levels (easy/medium/hard); the hook's AI turn effect calls `getAIDecision`
 - `hooks/useGameState.ts` - State orchestration, reducer, and side effects (AI turn automation)
+- Turn sequencing: `PLAY_CARD`/`DRAW_CARD` set `turnAction: 'waiting'`; a single effect in `useGameState` dispatches `END_TURN`. Do not dispatch `END_TURN` from handlers.
+- Tests live next to their modules (`lib/*.test.ts`, `hooks/*.test.tsx`) and run with Vitest (jsdom)
 
 ### Component Structure
 ```

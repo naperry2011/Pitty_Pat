@@ -11,14 +11,15 @@ import { findPlayableCards } from '@/lib/game-engine';
 import clsx from 'clsx';
 
 // Confetti component for win celebration
+// Piece attributes derive deterministically from the index so render stays pure.
 function Confetti() {
   const colors = ['#FF6B6B', '#FFE66D', '#4ECDC4', '#DDA0DD', '#5F7ADB', '#FF9F43'];
   const pieces = Array.from({ length: 50 }, (_, i) => ({
     id: i,
-    left: Math.random() * 100,
-    delay: Math.random() * 2,
-    color: colors[Math.floor(Math.random() * colors.length)],
-    size: 8 + Math.random() * 8
+    left: (i * 137) % 100,
+    delay: ((i * 31) % 20) / 10,
+    color: colors[i % colors.length],
+    size: 8 + ((i * 97) % 9)
   }));
 
   return (
@@ -33,7 +34,7 @@ function Confetti() {
             width: piece.size,
             height: piece.size,
             animationDelay: `${piece.delay}s`,
-            borderRadius: Math.random() > 0.5 ? '50%' : '2px'
+            borderRadius: piece.id % 2 === 0 ? '50%' : '2px'
           }}
         />
       ))}
@@ -68,6 +69,8 @@ export default function GameBoard() {
   // Show confetti on win
   useEffect(() => {
     if (gameState.phase === 'roundEnd' && gameState.winner === humanPlayer?.id) {
+      // Reacting to a game-state transition; the timeout below clears it again.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShowConfetti(true);
       const timer = setTimeout(() => setShowConfetti(false), 3000);
       return () => clearTimeout(timer);

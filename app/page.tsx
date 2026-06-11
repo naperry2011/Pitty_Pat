@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 
 // Floating card animation component
-function FloatingCard({ suit, delay, left }: { suit: string; delay: number; left: number }) {
+// Position and duration derive deterministically from the index so render stays pure.
+function FloatingCard({ suit, delay, left, seed }: { suit: string; delay: number; left: number; seed: number }) {
   const suitColors: Record<string, string> = {
     '♥': 'text-red-500',
     '♦': 'text-orange-500',
@@ -17,9 +18,9 @@ function FloatingCard({ suit, delay, left }: { suit: string; delay: number; left
       className={`absolute text-4xl sm:text-5xl opacity-20 animate-float ${suitColors[suit]}`}
       style={{
         left: `${left}%`,
-        top: `${10 + Math.random() * 60}%`,
+        top: `${10 + ((seed * 137) % 61)}%`,
         animationDelay: `${delay}s`,
-        animationDuration: `${3 + Math.random() * 2}s`
+        animationDuration: `${3 + ((seed * 53) % 21) / 10}s`
       }}
     >
       {suit}
@@ -31,6 +32,8 @@ export default function Home() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    // Hydration gate: the floating cards render only on the client.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
@@ -39,7 +42,8 @@ export default function Home() {
     ? Array.from({ length: 12 }, (_, i) => ({
         suit: suits[i % 4],
         delay: i * 0.5,
-        left: (i * 8) + 2
+        left: (i * 8) + 2,
+        seed: i + 1
       }))
     : [];
 
