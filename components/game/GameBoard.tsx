@@ -9,6 +9,7 @@ import DiscardPile from './DiscardPile';
 import CardStyleSelector from './CardStyleSelector';
 import { findPlayableCards } from '@/lib/game-engine';
 import { GameSettings } from '@/lib/settings';
+import { playSound, setMuted } from '@/lib/sound';
 import Icon from '@/components/ui/Icon';
 import { LayoutGroup, motion, useReducedMotion } from 'framer-motion';
 import clsx from 'clsx';
@@ -86,19 +87,49 @@ export default function GameBoard({ settings, onChangeSettings }: GameBoardProps
     ? { duration: 0 }
     : { type: 'spring', stiffness: 300, damping: 20 } as const;
 
+  // Sound is muted/unmuted locally; the sound module persists it to settings.
+  const [soundMuted, setSoundMuted] = useState(settings.soundMuted);
+  const handleToggleMute = () => {
+    const next = !soundMuted;
+    setSoundMuted(next);
+    setMuted(next);
+  };
+
   // Counts deals: increments each time the phase enters 'playing' (new round
   // or rematch). Keying the hands by it remounts them so the deal-in
   // animation re-triggers. Deterministic from state transitions - no randomness.
+  // The same transition watcher drives the phase-based sound cues.
   const [dealRound, setDealRound] = useState(0);
   const prevPhaseRef = useRef(gameState.phase);
+  // humanPlayer is derived further down; compute inline here since this
+  // effect block runs before those declarations.
+  const humanWinner =
+    gameState.winner !== null &&
+    gameState.winner === gameState.players.find(p => !p.isAI)?.id;
   useEffect(() => {
-    if (gameState.phase === 'playing' && prevPhaseRef.current !== 'playing') {
+    if (gameState.phase === prevPhaseRef.current) return;
+    if (gameState.phase === 'playing') {
       // Reacting to a phase transition into 'playing' (a fresh deal).
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setDealRound(n => n + 1);
+      playSound('shuffle');
+    } else if (gameState.phase === 'roundEnd') {
+      // Softer cue when the AI takes the round
+      playSound(humanWinner ? 'round-win' : 'match');
+    } else if (gameState.phase === 'gameEnd') {
+      playSound('match-win');
     }
     prevPhaseRef.current = gameState.phase;
-  }, [gameState.phase]);
+  }, [gameState.phase, humanWinner]);
+
+  // A card landing on the discard pile (play or draw-through) -> slide
+  const prevDiscardLenRef = useRef(gameState.discardPile.length);
+  useEffect(() => {
+    if (gameState.discardPile.length > prevDiscardLenRef.current) {
+      playSound('slide');
+    }
+    prevDiscardLenRef.current = gameState.discardPile.length;
+  }, [gameState.discardPile.length]);
 
   // Move focus into the match-over dialog when it mounts
   useEffect(() => {
@@ -409,6 +440,22 @@ export default function GameBoard({ settings, onChangeSettings }: GameBoardProps
                     <span>First to empty your hand wins!</span>
                   </div>
                 </div>
+              </div>
+
+              {/* Sound toggle */}
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 shadow-soft flex items-center justify-between">
+                <h3 className="text-gray-700 font-bold text-sm">Sound</h3>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleToggleMute();
+                  }}
+                  aria-pressed={!soundMuted}
+                  className="flex items-center gap-2 bg-white rounded-xl px-3 py-2 shadow-soft text-gray-600 font-medium text-sm active:scale-95 transition-transform touch-target"
+                >
+                  <Icon name={soundMuted ? 'sound-off' : 'sound-on'} size={18} />
+                  <span>{soundMuted ? 'Off' : 'On'}</span>
+                </button>
               </div>
 
               {/* Card Style Selector */}
