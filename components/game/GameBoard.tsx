@@ -10,19 +10,21 @@ import CardStyleSelector from './CardStyleSelector';
 import { findPlayableCards } from '@/lib/game-engine';
 import { GameSettings } from '@/lib/settings';
 import Icon from '@/components/ui/Icon';
-import { LayoutGroup } from 'framer-motion';
+import { LayoutGroup, motion, useReducedMotion } from 'framer-motion';
 import clsx from 'clsx';
 
 // Confetti component for win celebration
 // Piece attributes derive deterministically from the index so render stays pure.
-function Confetti() {
-  const colors = ['#FF6B6B', '#FFE66D', '#4ECDC4', '#DDA0DD', '#5F7ADB', '#FF9F43'];
-  const pieces = Array.from({ length: 50 }, (_, i) => ({
+function Confetti({ count = 50 }: { count?: number }) {
+  // Premium palette: coral, gold, felt, cream, soft purple
+  const colors = ['#FF6B6B', '#F4B942', '#2E9E8F', '#FFF8F0', '#DDA0DD'];
+  const pieces = Array.from({ length: count }, (_, i) => ({
     id: i,
     left: (i * 137) % 100,
     delay: ((i * 31) % 20) / 10,
     color: colors[i % colors.length],
-    size: 8 + ((i * 97) % 9)
+    size: 8 + ((i * 97) % 9),
+    shape: i % 3 // 0 = circle, 1 = square, 2 = strip
   }));
 
   return (
@@ -30,14 +32,14 @@ function Confetti() {
       {pieces.map(piece => (
         <div
           key={piece.id}
-          className="confetti-piece"
+          className={clsx('confetti-piece', piece.id % 4 === 0 && 'confetti-piece-drift')}
           style={{
             left: `${piece.left}%`,
             backgroundColor: piece.color,
-            width: piece.size,
-            height: piece.size,
+            width: piece.shape === 2 ? Math.round(piece.size / 2) : piece.size,
+            height: piece.shape === 2 ? piece.size * 2 : piece.size,
             animationDelay: `${piece.delay}s`,
-            borderRadius: piece.id % 2 === 0 ? '50%' : '2px'
+            borderRadius: piece.shape === 0 ? '50%' : '2px'
           }}
         />
       ))}
@@ -79,6 +81,10 @@ export default function GameBoard({ settings, onChangeSettings }: GameBoardProps
   const [showInstructions, setShowInstructions] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const rematchButtonRef = useRef<HTMLButtonElement>(null);
+  const reduceMotion = useReducedMotion();
+  const winSpring = reduceMotion
+    ? { duration: 0 }
+    : { type: 'spring', stiffness: 300, damping: 20 } as const;
 
   // Counts deals: increments each time the phase enters 'playing' (new round
   // or rematch). Keying the hands by it remounts them so the deal-in
@@ -154,11 +160,24 @@ export default function GameBoard({ settings, onChangeSettings }: GameBoardProps
           className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center px-4"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="bg-white rounded-3xl shadow-playful p-6 sm:p-8 max-w-sm w-full flex flex-col items-center gap-5 animate-pop">
-            <h2 id="match-over-title" className="text-2xl sm:text-3xl font-black text-center text-gray-800">
+          {/* Denser celebration confetti behind the dialog (human wins only) */}
+          {gameState.winner === humanPlayer?.id && <Confetti count={120} />}
+
+          <motion.div
+            initial={{ scale: 0.6, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={winSpring}
+            className="relative z-[110] bg-white rounded-3xl shadow-floating p-6 sm:p-8 max-w-sm w-full flex flex-col items-center gap-5"
+          >
+            <Icon
+              name="trophy"
+              size={56}
+              className={gameState.winner === humanPlayer?.id ? 'text-gold' : 'text-slate-400'}
+            />
+            <h2 id="match-over-title" className="font-display text-3xl sm:text-4xl font-black text-center text-gray-800">
               {gameState.winner === humanPlayer?.id
-                ? 'You win the match! 🏆'
-                : 'Computer wins the match! 🤖'}
+                ? 'You win the match!'
+                : 'Computer wins the match!'}
             </h2>
 
             {/* Final pip score */}
@@ -188,7 +207,7 @@ export default function GameBoard({ settings, onChangeSettings }: GameBoardProps
                 Change settings
               </button>
             </div>
-          </div>
+          </motion.div>
         </div>
       )}
 
@@ -228,19 +247,24 @@ export default function GameBoard({ settings, onChangeSettings }: GameBoardProps
         {/* Game Status Message */}
         <div className="mb-3 min-h-[44px] flex items-center justify-center">
           {gameState.phase === 'roundEnd' && gameState.winner ? (
-            <div className={clsx(
-              "px-6 py-2.5 rounded-2xl shadow-lg win-bounce",
-              gameState.winner === humanPlayer?.id
-                ? "bg-gradient-to-r from-mint to-suit-clubs text-white"
-                : "bg-gradient-to-r from-soft-purple to-suit-spades text-white"
-            )}>
-              <div className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+            <motion.div
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={winSpring}
+              className={clsx(
+                "px-6 py-2.5 rounded-2xl shadow-floating",
+                gameState.winner === humanPlayer?.id
+                  ? "bg-gradient-to-r from-gold to-sunny text-ink"
+                  : "bg-gradient-to-r from-soft-purple to-suit-spades text-white"
+              )}
+            >
+              <div className="font-display text-xl sm:text-2xl font-bold flex items-center gap-2">
                 {gameState.winner === humanPlayer?.id
                   ? <>Great job! You win! 🎉</>
                   : <>Computer wins! 🤖</>
                 }
               </div>
-            </div>
+            </motion.div>
           ) : (
             <div className="bg-white/70 backdrop-blur-sm px-4 py-2 rounded-full shadow-soft">
               <div className="text-gray-700 text-base font-medium">
@@ -335,9 +359,11 @@ export default function GameBoard({ settings, onChangeSettings }: GameBoardProps
           </div>
         </div>
 
-        {/* Restart Button */}
+        {/* Restart Button + reserved ad slot */}
         {gameState.phase === 'roundEnd' && (
-          <div className="flex justify-center mb-4">
+          <div className="flex flex-col items-center gap-2 mb-4">
+            {/* Reserved slot for a future round-end ad; intentionally empty */}
+            <div data-slot="round-end" className="min-h-24 w-full" />
             <button
               onClick={handleRestartRound}
               className="btn-playful text-lg touch-target"
