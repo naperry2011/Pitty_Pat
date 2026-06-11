@@ -10,6 +10,7 @@ import CardStyleSelector from './CardStyleSelector';
 import { findPlayableCards } from '@/lib/game-engine';
 import { GameSettings } from '@/lib/settings';
 import Icon from '@/components/ui/Icon';
+import { LayoutGroup } from 'framer-motion';
 import clsx from 'clsx';
 
 // Confetti component for win celebration
@@ -78,6 +79,20 @@ export default function GameBoard({ settings, onChangeSettings }: GameBoardProps
   const [showInstructions, setShowInstructions] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const rematchButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Counts deals: increments each time the phase enters 'playing' (new round
+  // or rematch). Keying the hands by it remounts them so the deal-in
+  // animation re-triggers. Deterministic from state transitions - no randomness.
+  const [dealRound, setDealRound] = useState(0);
+  const prevPhaseRef = useRef(gameState.phase);
+  useEffect(() => {
+    if (gameState.phase === 'playing' && prevPhaseRef.current !== 'playing') {
+      // Reacting to a phase transition into 'playing' (a fresh deal).
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setDealRound(n => n + 1);
+    }
+    prevPhaseRef.current = gameState.phase;
+  }, [gameState.phase]);
 
   // Move focus into the match-over dialog when it mounts
   useEffect(() => {
@@ -178,6 +193,7 @@ export default function GameBoard({ settings, onChangeSettings }: GameBoardProps
       )}
 
       {/* Main Content - Mobile-first stacked layout */}
+      <LayoutGroup>
       <div className="max-w-lg mx-auto flex flex-col min-h-screen px-3 py-4 safe-area-top safe-area-bottom">
 
         {/* Header: Home + Title + Score */}
@@ -245,6 +261,7 @@ export default function GameBoard({ settings, onChangeSettings }: GameBoardProps
           <div className="flex justify-center">
             {aiPlayer && (
               <Hand
+                key={`ai-${dealRound}`}
                 cards={aiPlayer.hand}
                 isPlayerHand={false}
                 disabled
@@ -307,6 +324,7 @@ export default function GameBoard({ settings, onChangeSettings }: GameBoardProps
           <div className="flex justify-center" onClick={(e) => e.stopPropagation()}>
             {humanPlayer && (
               <Hand
+                key={`player-${dealRound}`}
                 cards={humanPlayer.hand}
                 onCardTap={isPlayerTurn ? handleCardTap : undefined}
                 isPlayerHand
@@ -373,6 +391,7 @@ export default function GameBoard({ settings, onChangeSettings }: GameBoardProps
           )}
         </div>
       </div>
+      </LayoutGroup>
     </div>
   );
 }

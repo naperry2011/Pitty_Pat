@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Card as CardType } from '@/types';
 import Card from './Card';
 import clsx from 'clsx';
@@ -10,7 +11,19 @@ interface DiscardPileProps {
   className?: string;
 }
 
+const cardSpring = { type: 'spring', stiffness: 300, damping: 28 } as const;
+
+// Deterministic per-card rotation for the messy-pile look (render-pure).
+function messyRotation(cardId: string): number {
+  let hash = 0;
+  for (let i = 0; i < cardId.length; i++) {
+    hash += cardId.charCodeAt(i);
+  }
+  return (hash % 13) - 6;
+}
+
 export default function DiscardPile({ cards, className = '' }: DiscardPileProps) {
+  const reduceMotion = useReducedMotion();
   const topCards = cards.slice(-3); // Show last 3 cards for depth
 
   return (
@@ -25,21 +38,23 @@ export default function DiscardPile({ cards, className = '' }: DiscardPileProps)
           {/* Invisible base card to maintain container size */}
           <div className="w-16 h-24 sm:w-20 sm:h-28 opacity-0" />
 
-          {/* Actual cards - slightly fanned */}
+          {/* Actual cards - messy stack with deterministic rotation */}
           {topCards.map((card, index) => {
             const isTop = index === topCards.length - 1;
             const offset = index * 3;
-            const rotation = (index - 1) * 3;
 
             return (
-              <div
+              <motion.div
                 key={card.id}
-                className={clsx(
-                  'absolute top-0 left-0 transition-all duration-300',
-                  !isTop && 'opacity-60'
-                )}
+                layoutId={card.id}
+                // Cards arrive via layout travel from a hand/deck; no fade-in
+                initial={false}
+                animate={{ rotate: messyRotation(card.id), opacity: isTop ? 1 : 0.6 }}
+                transition={reduceMotion ? { duration: 0 } : cardSpring}
+                className="absolute"
                 style={{
-                  transform: `translate(${offset}px, ${offset}px) rotate(${rotation}deg)`,
+                  top: offset,
+                  left: offset,
                   zIndex: index + 1
                 }}
               >
@@ -47,7 +62,7 @@ export default function DiscardPile({ cards, className = '' }: DiscardPileProps)
                   card={{ ...card, faceUp: true }}
                   size="responsive"
                 />
-              </div>
+              </motion.div>
             );
           })}
         </>
