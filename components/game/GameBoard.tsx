@@ -9,7 +9,7 @@ import DiscardPile from './DiscardPile';
 import CardStyleSelector from './CardStyleSelector';
 import { findPlayableCards } from '@/lib/game-engine';
 import { GameSettings } from '@/lib/settings';
-import { playSound, setMuted } from '@/lib/sound';
+import { playSound, setMuted, isMuted } from '@/lib/sound';
 import Icon from '@/components/ui/Icon';
 import { LayoutGroup, motion, useReducedMotion } from 'framer-motion';
 import clsx from 'clsx';
@@ -88,7 +88,9 @@ export default function GameBoard({ settings, onChangeSettings }: GameBoardProps
     : { type: 'spring', stiffness: 300, damping: 20 } as const;
 
   // Sound is muted/unmuted locally; the sound module persists it to settings.
-  const [soundMuted, setSoundMuted] = useState(settings.soundMuted);
+  // Seed from the module/persisted truth, not the settings prop, which can be
+  // stale if the mute was toggled during a previous game.
+  const [soundMuted, setSoundMuted] = useState(() => isMuted());
   const handleToggleMute = () => {
     const next = !soundMuted;
     setSoundMuted(next);
@@ -122,14 +124,17 @@ export default function GameBoard({ settings, onChangeSettings }: GameBoardProps
     prevPhaseRef.current = gameState.phase;
   }, [gameState.phase, humanWinner]);
 
-  // A card landing on the discard pile (play or draw-through) -> slide
+  // A card landing on the discard pile: 'flip' when it arrived via a draw
+  // (the deck shrank in the same transition), 'slide' when played from a hand.
   const prevDiscardLenRef = useRef(gameState.discardPile.length);
+  const prevDeckLenRef = useRef(gameState.deck.length);
   useEffect(() => {
     if (gameState.discardPile.length > prevDiscardLenRef.current) {
-      playSound('slide');
+      playSound(gameState.deck.length < prevDeckLenRef.current ? 'flip' : 'slide');
     }
     prevDiscardLenRef.current = gameState.discardPile.length;
-  }, [gameState.discardPile.length]);
+    prevDeckLenRef.current = gameState.deck.length;
+  }, [gameState.discardPile.length, gameState.deck.length]);
 
   // Move focus into the match-over dialog when it mounts
   useEffect(() => {
@@ -180,7 +185,7 @@ export default function GameBoard({ settings, onChangeSettings }: GameBoardProps
       onClick={handleClearSelection}
     >
       {/* Confetti celebration */}
-      {showConfetti && <Confetti />}
+      {showConfetti && !reduceMotion && <Confetti />}
 
       {/* Match over overlay */}
       {gameState.phase === 'gameEnd' && (
@@ -192,7 +197,7 @@ export default function GameBoard({ settings, onChangeSettings }: GameBoardProps
           onClick={(e) => e.stopPropagation()}
         >
           {/* Denser celebration confetti behind the dialog (human wins only) */}
-          {gameState.winner === humanPlayer?.id && <Confetti count={120} />}
+          {gameState.winner === humanPlayer?.id && !reduceMotion && <Confetti count={120} />}
 
           <motion.div
             initial={{ scale: 0.6, opacity: 0 }}

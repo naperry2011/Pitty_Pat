@@ -24,7 +24,15 @@ export default function PlayPage() {
         // selection state picks up the restored values instead of defaults.
         <SetupScreen key={String(restored)} initial={initialSettings} onStart={setSettings} />
       ) : (
-        <GameBoard settings={settings} onChangeSettings={() => setSettings(null)} />
+        <GameBoard
+          settings={settings}
+          onChangeSettings={() => {
+            // Re-read persisted settings (e.g. mute toggled in-game) so
+            // SetupScreen doesn't save stale values back over them.
+            setInitialSettings(loadSettings());
+            setSettings(null);
+          }}
+        />
       )}
     </main>
   );
