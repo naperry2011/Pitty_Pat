@@ -191,7 +191,7 @@ export default function GameBoard({ settings, onChangeSettings }: GameBoardProps
           </Link>
 
           {/* Title */}
-          <h1 className="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-coral to-soft-purple">
+          <h1 className="font-display text-2xl sm:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-coral to-soft-purple">
             Pitty Pat
           </h1>
 
@@ -260,7 +260,7 @@ export default function GameBoard({ settings, onChangeSettings }: GameBoardProps
           {/* Deck and Discard */}
           <div className="flex justify-center items-start gap-8 sm:gap-12 mb-4">
             <div className="flex flex-col items-center">
-              <div className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2">
+              <div className="text-cream/80 text-xs font-semibold uppercase tracking-wider mb-2">
                 Draw
               </div>
               <Deck
@@ -271,7 +271,7 @@ export default function GameBoard({ settings, onChangeSettings }: GameBoardProps
             </div>
 
             <div className="flex flex-col items-center">
-              <div className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2">
+              <div className="text-cream/80 text-xs font-semibold uppercase tracking-wider mb-2">
                 Discard
               </div>
               <DiscardPile cards={gameState.discardPile} />

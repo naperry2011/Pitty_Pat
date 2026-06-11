@@ -1,9 +1,10 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
+import { Inter, Fredoka } from 'next/font/google';
 import './globals.css';
 import { CardStyleProvider } from '@/contexts/CardStyleContext';
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
+const fredoka = Fredoka({ subsets: ['latin'], variable: '--font-display' });
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -51,7 +52,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
-      <body className={inter.className}>
+      <body className={`${inter.variable} ${fredoka.variable} font-sans`}>
         <CardStyleProvider>
           {children}
         </CardStyleProvider>
