@@ -29,7 +29,8 @@ export const metadata: Metadata = {
     description: 'The only place to play Pitty Pat online! Fast, free, and fun card matching game.',
     type: 'website',
     locale: 'en_US',
-    siteName: 'Pitty Pat Card Game'
+    siteName: 'Pitty Pat Card Game',
+    images: [{ url: '/og-image.png', width: 1200, height: 630 }]
   },
   twitter: {
     card: 'summary_large_image',
