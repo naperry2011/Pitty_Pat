@@ -19,6 +19,8 @@
   "author": "Nicholas Perry",
   "license": "ISC",
   "dependencies": {
+    "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.0.0",
     "clsx": "^2.1.1",
     "framer-motion": "^12.40.0",
     "next": "^16.2.9",

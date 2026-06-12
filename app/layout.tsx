@@ -3,6 +3,8 @@ import { Inter, Fredoka } from 'next/font/google';
 import './globals.css';
 import { CardStyleProvider } from '@/contexts/CardStyleContext';
 import { SITE_URL } from '@/lib/site';
+import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 const fredoka = Fredoka({ subsets: ['latin'], variable: '--font-display' });
@@ -59,6 +61,8 @@ export default function RootLayout({
         <CardStyleProvider>
           {children}
         </CardStyleProvider>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
