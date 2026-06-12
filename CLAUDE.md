@@ -33,28 +33,37 @@ npm run test         # Run unit tests (Vitest)
 - `lib/ai-player.ts` - AI decision-making with difficulty levels (easy/medium/hard); the hook's AI turn effect calls `getAIDecision`
 - `hooks/useGameState.ts` - State orchestration, reducer, and side effects (AI turn automation)
 - Turn sequencing: `PLAY_CARD`/`DRAW_CARD` set `turnAction: 'waiting'`; a single effect in `useGameState` dispatches `END_TURN`. Do not dispatch `END_TURN` from handlers.
-- Tests live next to their modules (`lib/*.test.ts`, `hooks/*.test.tsx`) and run with Vitest (jsdom)
+- Tests live next to their modules (`lib/*.test.ts`, `hooks/*.test.tsx`, `components/**/*.test.tsx`) and run with Vitest (jsdom)
+- Animations (framer-motion) and sound are presentation-only: they read state transitions in GameBoard effects and are never a source of truth
 
 ### Component Structure
 ```
-RootLayout (CardStyleProvider)
-  └── GameBoard (useGameState hook)
-      ├── Hand (player & AI)
-      ├── Deck
-      ├── DiscardPile
-      └── CardStyleSelector
+RootLayout (CardStyleProvider, Analytics)
+  └── PlayPage (settings state: null → SetupScreen, set → GameBoard)
+      ├── SetupScreen (difficulty Chill/Clever/Sharp, match length 3/5/10)
+      └── GameBoard (useGameState(difficulty, matchTarget))
+          ├── Hand (player & AI) → Card → CardFace (SVG faces) / CardBackDesign (SVG backs)
+          ├── Deck
+          ├── DiscardPile
+          ├── WinPips (round-win score), roundEnd banner, gameEnd dialog
+          └── CardStyleSelector + mute toggle (Help & Settings footer)
 ```
 
 ### Key Files
 | File | Purpose |
 |------|---------|
-| `types/index.ts` | All type definitions (Card, Player, GameState, GameAction) |
-| `lib/game-engine.ts` | Core game logic - modify for rule changes |
+| `types/index.ts` | All type definitions (Card, Player, GameState incl. matchTarget, GameAction) |
+| `lib/game-engine.ts` | Core game logic - modify for rule changes (incl. match win → gameEnd) |
 | `lib/ai-player.ts` | AI behavior - modify for difficulty adjustments |
+| `lib/settings.ts` | Persisted game settings (difficulty, matchTarget, soundMuted) |
+| `lib/sound.ts` | Sound effects + haptics (mute persisted via settings; UI triggers live in GameBoard effects only) |
+| `lib/timing.ts` | Shared timing constants (endTurnDelay, aiThinkDelay, dealStagger) |
 | `hooks/useGameState.ts` | State management - modify for new game actions |
-| `components/game/GameBoard.tsx` | Main UI composition |
-| `tailwind.config.ts` | Custom colors, animations (poker table effects) |
-| `app/globals.css` | Custom CSS utilities (felt texture, card shadows) |
+| `components/game/GameBoard.tsx` | Main UI composition, animation/sound trigger effects |
+| `components/game/CardFace.tsx` | SVG playing-card faces (pure; authentic pip layouts) |
+| `components/ui/Icon.tsx` | Chrome icon set (typed name union) |
+| `tailwind.config.ts` | Design tokens (coral/cream/felt/gold/ink, shadow-card/raised/floating, font-display) |
+| `app/globals.css` | Custom CSS utilities (felt gradient table, confetti, reduced-motion guards) |
 
 ## Conventions
 
@@ -70,3 +79,4 @@ RootLayout (CardStyleProvider)
 - Match the rank of top discard card to play, otherwise draw
 - Drawn card auto-plays if it matches, otherwise goes to discard
 - First to empty hand wins the round
+- Matches are first-to-N round wins (N = 3/5/10 from the setup screen); reaching N sets phase `gameEnd` (Rematch / Change settings)
