@@ -20,6 +20,7 @@ function aiTurnState(aiHand: Card[], topDiscard: Card): GameState {
     turnAction: 'draw',
     message: '',
     selectedCardId: null,
+    matchTarget: 5,
   };
 }
 

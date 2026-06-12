@@ -27,6 +27,7 @@ export function createPlaceholderGameState(): GameState {
     winner: null,
     turnAction: 'waiting',
     message: 'Loading game...',
-    selectedCardId: null
+    selectedCardId: null,
+    matchTarget: 5
   };
 }

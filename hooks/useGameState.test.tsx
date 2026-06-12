@@ -1,6 +1,7 @@
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useGameState } from './useGameState';
+import { useGameState, gameReducer } from './useGameState';
+import { createInitialGameState } from '@/lib/game-engine';
 import * as aiPlayer from '@/lib/ai-player';
 
 vi.mock('@/lib/ai-player', async (importOriginal) => {
@@ -29,6 +30,24 @@ describe('useGameState', () => {
     expect(result.current.gameState.players[0].hand).toHaveLength(5);
     expect(result.current.gameState.players[1].hand).toHaveLength(5);
     expect(result.current.gameState.turnAction).toBe('draw');
+  });
+
+  test('passes the match target into the initial game state', () => {
+    const { result } = renderHook(() => useGameState('easy', 3));
+    expect(result.current.gameState.matchTarget).toBe(3);
+  });
+
+  test('START_GAME resets wins for a rematch', () => {
+    // A mid-match state with nonzero wins must be fully reset by START_GAME.
+    const initial = createInitialGameState('Player', 5);
+    const stateWithWins = {
+      ...initial,
+      players: initial.players.map(p => ({ ...p, wins: 4 })),
+    };
+    const next = gameReducer(stateWithWins, { type: 'START_GAME', matchTarget: 3 });
+    expect(next.players[0].wins).toBe(0);
+    expect(next.players[1].wins).toBe(0);
+    expect(next.matchTarget).toBe(3);
   });
 
   test('AI turns are decided by getAIDecision with the configured difficulty', () => {

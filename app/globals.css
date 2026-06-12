@@ -98,15 +98,15 @@
     pointer-events: none;
   }
 
-  /* Game table area - soft and friendly */
+  /* Game table area - premium felt */
   .game-table {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.85) 100%);
-    backdrop-filter: blur(10px);
-    border: 3px solid rgba(255, 255, 255, 0.8);
+    background: radial-gradient(ellipse 120% 90% at 50% 35%, #2E9E8F 0%, #1F7A6D 100%);
+    border: 3px solid rgba(255, 248, 240, 0.35);
     box-shadow:
-      0 10px 40px -10px rgba(0, 0, 0, 0.1),
-      0 0 0 1px rgba(0, 0, 0, 0.05),
-      inset 0 1px 0 rgba(255, 255, 255, 0.9);
+      0 10px 40px -10px rgba(45, 49, 66, 0.3),
+      0 0 0 1px rgba(31, 122, 109, 0.4),
+      inset 0 2px 16px rgba(0, 0, 0, 0.18),
+      inset 0 1px 0 rgba(255, 255, 255, 0.18);
   }
 
   /* Selected card glow effect */
@@ -151,6 +151,40 @@
     }
     100% {
       transform: translateY(100vh) rotate(720deg);
+      opacity: 0;
+    }
+  }
+
+  /* Reduced motion: never animate confetti, even if rendered */
+  @media (prefers-reduced-motion: reduce) {
+    .confetti-piece {
+      animation: none;
+      opacity: 0;
+    }
+  }
+
+  /* Variant: some pieces sway sideways as they fall for a livelier shower */
+  .confetti-piece-drift {
+    animation-name: confettiDrift;
+    animation-duration: 3.5s;
+  }
+
+  @keyframes confettiDrift {
+    0% {
+      transform: translate(0, 0) rotate(0deg);
+      opacity: 1;
+    }
+    25% {
+      transform: translate(24px, 25vh) rotate(180deg);
+    }
+    50% {
+      transform: translate(-16px, 50vh) rotate(360deg);
+    }
+    75% {
+      transform: translate(20px, 75vh) rotate(540deg);
+    }
+    100% {
+      transform: translate(0, 100vh) rotate(720deg);
       opacity: 0;
     }
   }

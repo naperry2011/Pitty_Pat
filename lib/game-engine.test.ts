@@ -30,6 +30,7 @@ function makeState(overrides: Partial<GameState> = {}): GameState {
     turnAction: 'draw',
     message: '',
     selectedCardId: null,
+    matchTarget: 5,
     ...overrides,
   };
 }
@@ -171,6 +172,39 @@ describe('endTurn', () => {
     expect(toAI.turnAction).toBe('draw');
     const toHuman = endTurn(makeState({ currentPlayerIndex: 1, turnAction: 'waiting' }));
     expect(toHuman.turnAction).toBe('draw');
+  });
+});
+
+describe('match structure', () => {
+  test('round win below the match target ends the round only', () => {
+    const state = makeState({
+      matchTarget: 3,
+      players: [
+        { id: 'player1', name: 'Player', hand: [card('5', 'spades')], isAI: false, wins: 1 },
+        { id: 'ai1', name: 'Computer', hand: [card('2', 'clubs')], isAI: true, wins: 0 },
+      ],
+    });
+    const next = playCard(state, '5-spades');
+    expect(next.phase).toBe('roundEnd');
+    expect(next.players[0].wins).toBe(2);
+  });
+
+  test('reaching the match target ends the match with gameEnd', () => {
+    const state = makeState({
+      matchTarget: 3,
+      players: [
+        { id: 'player1', name: 'Player', hand: [card('5', 'spades')], isAI: false, wins: 2 },
+        { id: 'ai1', name: 'Computer', hand: [card('2', 'clubs')], isAI: true, wins: 0 },
+      ],
+    });
+    const next = playCard(state, '5-spades');
+    expect(next.phase).toBe('gameEnd');
+    expect(next.players[0].wins).toBe(3);
+    expect(next.winner).toBe('player1');
+  });
+
+  test('createInitialGameState stores the match target', () => {
+    expect(createInitialGameState('P', 10).matchTarget).toBe(10);
   });
 });
 

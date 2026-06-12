@@ -154,13 +154,16 @@ export function playCard(state: GameState, cardId: string): GameState {
       hand: newHand,
       wins: currentPlayer.wins + 1
     };
+    const wonMatch = winner.wins >= state.matchTarget;
     return {
       ...state,
       players: updatedPlayers.map(p => p.id === winner.id ? winner : p),
       discardPile: [...state.discardPile, card],
-      phase: 'roundEnd',
+      phase: wonMatch ? 'gameEnd' : 'roundEnd',
       winner: winner.id,
-      message: `${winner.name} wins the round!`
+      message: wonMatch
+        ? `${winner.name} wins the match!`
+        : `${winner.name} wins the round!`
     };
   }
 
@@ -199,7 +202,7 @@ export function getCardDisplay(card: Card): string {
 }
 
 // Create initial game state
-export function createInitialGameState(playerName: string = 'Player'): GameState {
+export function createInitialGameState(playerName: string = 'Player', matchTarget: number = 5): GameState {
   const deck = shuffleDeck(createDeck());
   const { playerHands, remainingDeck, discardPile } = dealCards(deck, 2, 5);
 
@@ -229,6 +232,7 @@ export function createInitialGameState(playerName: string = 'Player'): GameState
     winner: null,
     turnAction: 'draw',
     message: "Game started! Your turn.",
-    selectedCardId: null
+    selectedCardId: null,
+    matchTarget
   };
 }

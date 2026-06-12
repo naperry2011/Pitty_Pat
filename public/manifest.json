@@ -4,7 +4,7 @@
   "description": "A fun, kid-friendly card matching game!",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#87CEEB",
+  "background_color": "#FFF8F0",
   "theme_color": "#FF6B6B",
   "orientation": "portrait",
   "icons": [

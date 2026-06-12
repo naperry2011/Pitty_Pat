@@ -13,14 +13,15 @@ import {
 } from '@/lib/game-engine';
 import { getAIDecision, AIDifficulty } from '@/lib/ai-player';
 import { createPlaceholderGameState } from '@/lib/initial-state';
+import { TIMING } from '@/lib/timing';
 import { logGameState } from '@/lib/debug-helper';
 
 // Game reducer to handle state transitions
-function gameReducer(state: GameState, action: GameAction): GameState {
+export function gameReducer(state: GameState, action: GameAction): GameState {
   const newState: GameState = (() => {
     switch (action.type) {
       case 'START_GAME':
-        return createInitialGameState('Player');
+        return createInitialGameState('Player', action.matchTarget);
 
     case 'RESTART_GAME': {
       // Start a new round with same players
@@ -89,7 +90,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
   return newState;
 }
 
-export function useGameState(aiDifficulty: AIDifficulty = 'easy') {
+export function useGameState(aiDifficulty: AIDifficulty = 'easy', matchTarget = 5) {
   const isInitialized = useRef(false);
   const [gameState, dispatch] = useReducer(gameReducer, createPlaceholderGameState());
 
@@ -97,9 +98,10 @@ export function useGameState(aiDifficulty: AIDifficulty = 'easy') {
   useEffect(() => {
     if (!isInitialized.current) {
       isInitialized.current = true;
-      dispatch({ type: 'START_GAME' });
+      dispatch({ type: 'START_GAME', matchTarget });
     }
-  }, []);
+    // matchTarget changes after init are intentionally ignored (isInitialized ref guards re-init).
+  }, [matchTarget]);
 
   // Handle drawing a card
   const handleDrawCard = useCallback(() => {
@@ -150,8 +152,8 @@ export function useGameState(aiDifficulty: AIDifficulty = 'easy') {
 
   // Handle starting a new game
   const handleNewGame = useCallback(() => {
-    dispatch({ type: 'START_GAME' });
-  }, []);
+    dispatch({ type: 'START_GAME', matchTarget });
+  }, [matchTarget]);
 
   // Handle restarting after a round
   const handleRestartRound = useCallback(() => {
@@ -166,7 +168,7 @@ export function useGameState(aiDifficulty: AIDifficulty = 'easy') {
 
     const timer = setTimeout(() => {
       dispatch({ type: 'END_TURN' });
-    }, 400);
+    }, TIMING.endTurnDelay);
 
     return () => clearTimeout(timer);
   }, [gameState.phase, gameState.turnAction]);
@@ -187,7 +189,7 @@ export function useGameState(aiDifficulty: AIDifficulty = 'easy') {
       } else {
         dispatch({ type: 'DRAW_CARD' });
       }
-    }, 1200);
+    }, TIMING.aiThinkDelay);
 
     // Cleanup timeout on unmount or when dependencies change
     return () => clearTimeout(timer);

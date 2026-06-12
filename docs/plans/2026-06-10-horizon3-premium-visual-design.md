@@ -63,3 +63,5 @@
 - Multiplayer, accounts, backend of any kind.
 - Ads rendering (slot reserved only).
 - Tonk / portfolio game #2 (decision deferred until post-launch traffic data).
+
+> Amendment (implementation): round end uses a manual ''Play Again'' button rather than auto-deal, and returning players get a pre-filled setup screen (one tap to play) rather than skipping it. Both chosen in the implementation plan.

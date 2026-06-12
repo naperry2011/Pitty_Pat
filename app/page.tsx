@@ -1,189 +1,182 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
+import CardFace from '@/components/game/CardFace';
+import Icon, { IconName } from '@/components/ui/Icon';
+import { Rank, Suit } from '@/types';
 
-// Floating card animation component
-// Position and duration derive deterministically from the index so render stays pure.
-function FloatingCard({ suit, delay, left, seed }: { suit: string; delay: number; left: number; seed: number }) {
-  const suitColors: Record<string, string> = {
-    '♥': 'text-red-500',
-    '♦': 'text-orange-500',
-    '♣': 'text-emerald-600',
-    '♠': 'text-indigo-600'
-  };
+// Hero fan: five cards arced like a held hand. z stacks the center card on top.
+const HERO_CARDS: { rank: Rank; suit: Suit; rotate: number; x: number; y: number; z: number }[] = [
+  { rank: 'A', suit: 'hearts', rotate: -24, x: -84, y: 26, z: 1 },
+  { rank: 'K', suit: 'spades', rotate: -12, x: -42, y: 8, z: 2 },
+  { rank: 'Q', suit: 'diamonds', rotate: 0, x: 0, y: 0, z: 3 },
+  { rank: 'J', suit: 'clubs', rotate: 12, x: 42, y: 8, z: 2 },
+  { rank: '10', suit: 'hearts', rotate: 24, x: 84, y: 26, z: 1 },
+];
 
-  return (
-    <div
-      className={`absolute text-4xl sm:text-5xl opacity-20 animate-float ${suitColors[suit]}`}
-      style={{
-        left: `${left}%`,
-        top: `${10 + ((seed * 137) % 61)}%`,
-        animationDelay: `${delay}s`,
-        animationDuration: `${3 + ((seed * 53) % 21) / 10}s`
-      }}
-    >
-      {suit}
-    </div>
-  );
-}
+const STEPS: { icon: IconName; title: string; body: string }[] = [
+  {
+    icon: 'cards',
+    title: 'Match the Card!',
+    body: 'Look at the card on top. If you have a card with the same number, tap it to play!',
+  },
+  {
+    icon: 'arrow-down',
+    title: 'No Match? Draw!',
+    body: "Can't match? No worries! Just tap the deck to draw a new card.",
+  },
+  {
+    icon: 'trophy',
+    title: 'Empty Hand = You Win!',
+    body: "Be the first to play all your cards and you're the winner!",
+  },
+];
+
+const FUN_FACTS = [
+  { value: '52', label: 'Cards' },
+  { value: '5', label: 'Cards Each' },
+  { value: '0', label: 'Cards to Win' },
+];
 
 export default function Home() {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    // Hydration gate: the floating cards render only on the client.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMounted(true);
-  }, []);
-
-  const suits = ['♥', '♦', '♣', '♠'];
-  const floatingCards = mounted
-    ? Array.from({ length: 12 }, (_, i) => ({
-        suit: suits[i % 4],
-        delay: i * 0.5,
-        left: (i * 8) + 2,
-        seed: i + 1
-      }))
-    : [];
+  const reduceMotion = useReducedMotion();
 
   return (
-    <main className="min-h-screen playful-bg relative overflow-hidden">
-      {/* Floating background cards */}
-      {floatingCards.map((card, i) => (
-        <FloatingCard key={i} {...card} />
-      ))}
-
-      {/* Main content */}
-      <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4 py-8 safe-area-top safe-area-bottom">
-        {/* Hero Section */}
-        <div className="text-center mb-8">
-          {/* Animated cards icon */}
-          <div className="flex justify-center gap-2 mb-4">
-            <div className="w-12 h-16 sm:w-16 sm:h-20 bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg transform -rotate-12 border-2 border-white flex items-center justify-center">
-              <span className="text-white text-2xl sm:text-3xl">♥</span>
-            </div>
-            <div className="w-12 h-16 sm:w-16 sm:h-20 bg-gradient-to-br from-white to-gray-100 rounded-xl shadow-lg transform rotate-6 border-2 border-gray-200 flex items-center justify-center -ml-4">
-              <span className="text-indigo-600 text-2xl sm:text-3xl">♠</span>
-            </div>
-            <div className="w-12 h-16 sm:w-16 sm:h-20 bg-gradient-to-br from-orange-400 to-orange-500 rounded-xl shadow-lg transform -rotate-6 border-2 border-white flex items-center justify-center -ml-4">
-              <span className="text-white text-2xl sm:text-3xl">♦</span>
-            </div>
+    <main className="min-h-screen bg-cream">
+      <div className="min-h-screen flex flex-col items-center justify-center px-4 py-10 safe-area-top safe-area-bottom">
+        {/* Hero */}
+        <div className="text-center mb-10">
+          {/* Fanned card arc */}
+          <div className="relative h-40 sm:h-48 w-72 sm:w-80 mx-auto mb-6" aria-hidden="true">
+            {HERO_CARDS.map((card, i) => (
+              <motion.div
+                key={`${card.rank}-${card.suit}`}
+                className="absolute left-1/2 bottom-0 -ml-10 sm:-ml-12 w-20 h-[120px] sm:w-24 sm:h-36 drop-shadow-lg"
+                style={{ originY: 1, zIndex: card.z }}
+                initial={
+                  reduceMotion
+                    ? false
+                    : { opacity: 0, y: 40, rotate: 0, x: 0 }
+                }
+                animate={{
+                  opacity: 1,
+                  x: card.x,
+                  y: card.y,
+                  rotate: card.rotate,
+                }}
+                transition={
+                  reduceMotion
+                    ? { duration: 0 }
+                    : {
+                        type: 'spring',
+                        stiffness: 260,
+                        damping: 20,
+                        delay: 0.15 + i * 0.08,
+                      }
+                }
+              >
+                <CardFace rank={card.rank} suit={card.suit} className="rounded-lg" />
+              </motion.div>
+            ))}
           </div>
 
-          {/* Title */}
-          <h1 className="text-5xl sm:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-coral via-purple-500 to-indigo-600 mb-3">
-            Pitty Pat!
+          <h1 className="font-display text-5xl sm:text-7xl font-bold text-ink mb-3">
+            Pitty&nbsp;Pat!
           </h1>
-          <p className="text-xl sm:text-2xl text-gray-600 font-medium">
-            The Super Fun Card Game! 🎉
+          <p className="text-xl sm:text-2xl text-ink/70 font-medium">
+            The Super Fun Card Game!
           </p>
         </div>
 
         {/* Play Button */}
         <Link
           href="/play"
-          className="group mb-10 px-10 py-5 bg-gradient-to-r from-coral to-pink-500 text-white text-2xl sm:text-3xl font-bold rounded-3xl shadow-xl hover:shadow-2xl transform hover:scale-105 active:scale-95 transition-all duration-200 flex items-center gap-3"
+          className="mb-12 px-12 py-5 bg-gradient-to-br from-coral to-coral-deep text-white font-display text-2xl sm:text-3xl font-semibold rounded-3xl shadow-raised hover:shadow-floating hover:-translate-y-0.5 active:scale-95 transition-all duration-200"
         >
-          <span>Play Now!</span>
-          <span className="text-3xl sm:text-4xl group-hover:animate-bounce">🎮</span>
+          Play Now!
         </Link>
 
-        {/* How to Play Section */}
-        <div className="w-full max-w-md bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl p-6 sm:p-8 mb-8">
-          <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 text-center mb-6 flex items-center justify-center gap-2">
-            <span>📖</span>
-            <span>How to Play</span>
+        {/* How to Play */}
+        <section className="w-full max-w-md mb-8">
+          <h2 className="font-display text-2xl sm:text-3xl font-semibold text-ink text-center mb-5">
+            How to Play
           </h2>
 
-          <div className="space-y-4">
-            {/* Rule 1 */}
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-coral to-pink-500 rounded-full flex items-center justify-center flex-shrink-0 shadow-md">
-                <span className="text-white text-lg sm:text-xl font-bold">1</span>
+          <div className="space-y-3">
+            {STEPS.map(step => (
+              <div
+                key={step.title}
+                className="flex items-start gap-4 bg-white rounded-2xl p-4 sm:p-5 shadow-card"
+              >
+                <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-coral/10 text-coral-deep flex items-center justify-center flex-shrink-0">
+                  <Icon name={step.icon} size={24} />
+                </div>
+                <div>
+                  <h3 className="font-display font-semibold text-ink text-lg">{step.title}</h3>
+                  <p className="text-ink/70 text-sm sm:text-base">{step.body}</p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-bold text-gray-800 text-lg">Match the Card!</h3>
-                <p className="text-gray-600">Look at the card on top. If you have a card with the same number, tap it to play!</p>
-              </div>
-            </div>
-
-            {/* Rule 2 */}
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center flex-shrink-0 shadow-md">
-                <span className="text-white text-lg sm:text-xl font-bold">2</span>
-              </div>
-              <div>
-                <h3 className="font-bold text-gray-800 text-lg">No Match? Draw!</h3>
-                <p className="text-gray-600">Can't match? No worries! Just tap the deck to draw a new card.</p>
-              </div>
-            </div>
-
-            {/* Rule 3 */}
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center flex-shrink-0 shadow-md">
-                <span className="text-white text-lg sm:text-xl font-bold">3</span>
-              </div>
-              <div>
-                <h3 className="font-bold text-gray-800 text-lg">Empty Hand = You Win! 🏆</h3>
-                <p className="text-gray-600">Be the first to play all your cards and you're the winner!</p>
-              </div>
-            </div>
+            ))}
           </div>
 
           {/* Pro tip */}
-          <div className="mt-6 bg-gradient-to-r from-purple-100 to-indigo-100 rounded-2xl p-4">
-            <p className="text-center text-purple-700 font-medium">
-              <span className="text-xl">💡</span> <strong>Pro Tip:</strong> Tap a card once to select it, tap again to play!
+          <div className="mt-4 bg-gold/15 border border-gold/40 rounded-2xl p-4">
+            <p className="text-center text-ink/80 text-sm sm:text-base">
+              <strong className="text-ink">Pro Tip:</strong> Tap a card once to select it, tap
+              again to play!
             </p>
           </div>
-        </div>
+        </section>
 
-        {/* Play with Friends Section */}
-        <div className="w-full max-w-md bg-gradient-to-r from-indigo-500 to-purple-600 rounded-3xl shadow-xl p-6 sm:p-8 text-white text-center mb-8">
-          <div className="text-4xl mb-3">👫👭👬</div>
-          <h2 className="text-2xl font-bold mb-2">Play with Friends!</h2>
-          <p className="text-white/90 mb-4">
-            Pitty Pat is even more fun with friends! Show them how to play and take turns on the same device, or challenge them to beat your high score!
+        {/* Play with Friends */}
+        <section className="w-full max-w-md bg-gradient-to-br from-felt to-felt-deep rounded-3xl shadow-raised p-6 sm:p-8 text-cream text-center mb-8">
+          <h2 className="font-display text-2xl font-semibold mb-2">Play with Friends!</h2>
+          <p className="text-cream/90 mb-4">
+            Pitty Pat is even more fun with friends! Show them how to play and take turns on the
+            same device, or challenge them to beat your high score!
           </p>
           <div className="flex justify-center gap-2 flex-wrap">
-            <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">Take Turns</span>
-            <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">Beat High Scores</span>
-            <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">Teach Friends</span>
+            <span className="bg-cream/15 px-3 py-1 rounded-full text-sm font-medium">
+              Take Turns
+            </span>
+            <span className="bg-cream/15 px-3 py-1 rounded-full text-sm font-medium">
+              Beat High Scores
+            </span>
+            <span className="bg-cream/15 px-3 py-1 rounded-full text-sm font-medium">
+              Teach Friends
+            </span>
           </div>
-        </div>
+        </section>
 
         {/* Fun Facts */}
-        <div className="w-full max-w-md grid grid-cols-3 gap-3 mb-8">
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 text-center shadow-md">
-            <div className="text-3xl mb-1">🃏</div>
-            <div className="text-2xl font-bold text-gray-800">52</div>
-            <div className="text-xs text-gray-500">Cards</div>
-          </div>
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 text-center shadow-md">
-            <div className="text-3xl mb-1">✋</div>
-            <div className="text-2xl font-bold text-gray-800">5</div>
-            <div className="text-xs text-gray-500">Cards Each</div>
-          </div>
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 text-center shadow-md">
-            <div className="text-3xl mb-1">🎯</div>
-            <div className="text-2xl font-bold text-gray-800">0</div>
-            <div className="text-xs text-gray-500">Cards to Win</div>
-          </div>
+        <div className="w-full max-w-md grid grid-cols-3 gap-3 mb-10">
+          {FUN_FACTS.map(fact => (
+            <div key={fact.label} className="bg-white rounded-2xl p-4 text-center shadow-card">
+              <div className="font-display text-3xl font-bold text-coral-deep">{fact.value}</div>
+              <div className="text-xs text-ink/60 mt-1">{fact.label}</div>
+            </div>
+          ))}
         </div>
 
         {/* Bottom Play Button */}
         <Link
           href="/play"
-          className="px-8 py-4 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xl font-bold rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 transition-all duration-200"
+          className="px-9 py-4 bg-gradient-to-br from-coral to-coral-deep text-white font-display text-xl font-semibold rounded-2xl shadow-raised hover:shadow-floating hover:-translate-y-0.5 active:scale-95 transition-all duration-200"
         >
-          Let's Play! 🚀
+          Let&apos;s Play!
         </Link>
 
         {/* Footer */}
-        <p className="mt-8 text-gray-500 text-sm text-center">
-          Made with ❤️ for kids who love card games
-        </p>
+        <footer className="mt-10 text-ink/50 text-sm text-center space-x-4">
+          <span>Made with care for kids who love card games</span>
+          <Link href="/how-to-play" className="underline hover:text-ink/70">
+            How to Play
+          </Link>
+          <Link href="/rules" className="underline hover:text-ink/70">
+            Rules
+          </Link>
+        </footer>
       </div>
     </main>
   );

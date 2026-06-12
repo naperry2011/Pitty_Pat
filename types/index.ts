@@ -19,7 +19,7 @@ export interface Player {
 }
 
 // Game state types
-export type GamePhase = 'waiting' | 'playing' | 'roundEnd';
+export type GamePhase = 'waiting' | 'playing' | 'roundEnd' | 'gameEnd';
 export type TurnAction = 'draw' | 'play' | 'waiting';
 
 export interface GameState {
@@ -32,11 +32,12 @@ export interface GameState {
   turnAction: TurnAction;
   message: string;
   selectedCardId: string | null;  // For two-tap mobile interaction
+  matchTarget: number;  // Round wins needed to win the match
 }
 
 // Game action types for reducer
 export type GameAction =
-  | { type: 'START_GAME' }
+  | { type: 'START_GAME'; matchTarget: number }
   | { type: 'RESTART_GAME' }
   | { type: 'DRAW_CARD' }
   | { type: 'PLAY_CARD'; cardId: string }

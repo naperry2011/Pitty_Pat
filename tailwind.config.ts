@@ -12,7 +12,11 @@ const config: Config = {
         // Kid-friendly color palette
         'sky-start': '#87CEEB',
         'sky-end': '#E6E6FA',
-        'coral': '#FF6B6B',
+        'coral': { DEFAULT: '#FF6B6B', deep: '#E84855' },
+        'cream': '#FFF8F0',
+        'felt': { DEFAULT: '#2E9E8F', deep: '#1F7A6D' },
+        'gold': '#F4B942',
+        'ink': '#2D3142',
         'sunny': '#FFE66D',
         'mint': '#4ECDC4',
         'soft-purple': '#DDA0DD',
@@ -83,8 +87,15 @@ const config: Config = {
         '3xl': '1.5rem',
         '4xl': '2rem',
       },
+      fontFamily: {
+        display: ['var(--font-display)'],
+        sans: ['var(--font-sans)'],
+      },
       boxShadow: {
-        'card': '0 4px 12px -2px rgba(0, 0, 0, 0.15), 0 2px 6px -2px rgba(0, 0, 0, 0.1)',
+        // Elevation scale (premium tokens)
+        'card': '0 2px 8px rgba(45, 49, 66, 0.12)',
+        'raised': '0 6px 20px rgba(45, 49, 66, 0.16)',
+        'floating': '0 12px 32px rgba(45, 49, 66, 0.22)',
         'card-hover': '0 8px 20px -4px rgba(0, 0, 0, 0.2), 0 4px 10px -4px rgba(0, 0, 0, 0.1)',
         'card-selected': '0 0 0 4px rgba(255, 230, 109, 0.6), 0 8px 20px -4px rgba(0, 0, 0, 0.2)',
         'soft': '0 2px 8px rgba(0, 0, 0, 0.1)',
