@@ -165,7 +165,7 @@ export default function Rules() {
         </section>
 
         <div className="flex gap-4 mt-8">
-          <Link href="/" className="flex-1 bg-gradient-to-br from-coral to-coral-deep hover:shadow-floating text-white px-6 py-3 rounded-xl font-display font-semibold text-center shadow-raised transition-all">
+          <Link href="/play" className="flex-1 bg-gradient-to-br from-coral to-coral-deep hover:shadow-floating text-white px-6 py-3 rounded-xl font-display font-semibold text-center shadow-raised transition-all">
             Play Now →
           </Link>
           <Link href="/how-to-play" className="flex-1 bg-white hover:bg-cream text-ink px-6 py-3 rounded-xl font-display font-semibold text-center shadow-card transition-colors">

@@ -157,7 +157,7 @@ export default function HowToPlay() {
             Now that you know the rules, jump into a game! Our online version handles all the dealing and rules automatically,
             so you can focus on the fun.
           </p>
-          <Link href="/" className="inline-block bg-white text-coral-deep hover:bg-cream px-6 py-3 rounded-xl font-display font-semibold shadow-card transition-colors">
+          <Link href="/play" className="inline-block bg-white text-coral-deep hover:bg-cream px-6 py-3 rounded-xl font-display font-semibold shadow-card transition-colors">
             Play Pitty Pat Now →
           </Link>
         </section>
