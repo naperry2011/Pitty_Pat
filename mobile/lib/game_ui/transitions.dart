@@ -58,3 +58,24 @@ class StateTransition {
 
   static String _humanId(GameState s) => s.players.firstWhere((p) => !p.isAI).id;
 }
+
+/// The engine's status message, phrased for the person holding the phone.
+/// The engine (shared with the web) names the human "Player"; on screen that's "you".
+String displayMessage(GameState s, {bool secondPerson = true}) {
+  if (!secondPerson) {
+    // Pass-and-play: everyone is named; the engine's "Your turn" greetings get a name.
+    final mover = s.currentPlayer.name;
+    return switch (s.message) {
+      'Game started! Your turn.' => "$mover's turn",
+      'New round! Your turn.' => "New round! $mover's turn",
+      _ => s.message,
+    };
+  }
+  final human = s.players.firstWhere((p) => !p.isAI);
+  final m = s.message;
+  if (m == "${human.name}'s turn") return 'Your turn';
+  if (m == '${human.name} wins the match!') return 'You win the match!';
+  if (m == '${human.name} wins the round!') return 'You win the round!';
+  final prefix = '${human.name} ';
+  return m.startsWith(prefix) ? 'You ${m.substring(prefix.length)}' : m;
+}

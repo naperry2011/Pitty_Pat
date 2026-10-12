@@ -12,6 +12,7 @@ import '../widgets/profile_badges.dart';
 import 'daily_screen.dart';
 import 'game_screen.dart';
 import 'locker_screen.dart';
+import 'pass_play_setup_screen.dart';
 import 'settings_sheet.dart';
 import 'setup_screen.dart';
 import 'stats_screen.dart';
@@ -19,8 +20,9 @@ import 'stats_screen.dart';
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
-  void _push(BuildContext context, Widget screen) =>
-      Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => screen));
+  void _push(BuildContext context, Widget screen) => Navigator.of(
+    context,
+  ).push(MaterialPageRoute<void>(builder: (_) => screen));
 
   @override
   Widget build(BuildContext context) {
@@ -36,15 +38,31 @@ class HomeScreen extends StatelessWidget {
                 constraints: BoxConstraints(minHeight: box.maxHeight),
                 child: IntrinsicHeight(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
                     child: Column(
                       children: [
                         Row(
                           children: [
-                            LevelBadge(xp: profile.profile.xp),
+                            // Badges shrink rather than overflow with large system text.
+                            Expanded(
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Row(
+                                    children: [
+                                      LevelBadge(xp: profile.profile.xp),
+                                      const SizedBox(width: 8),
+                                      CoinBadge(coins: profile.profile.coins),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
                             const SizedBox(width: 8),
-                            CoinBadge(coins: profile.profile.coins),
-                            const Spacer(),
                             IconButton.filledTonal(
                               tooltip: 'Settings',
                               onPressed: () => showSettingsSheet(context),
@@ -69,7 +87,9 @@ class HomeScreen extends StatelessWidget {
                         Text(
                           'Match the rank. Empty your hand. Win.',
                           textAlign: TextAlign.center,
-                          style: text.bodyLarge?.copyWith(color: AppColors.ink.withValues(alpha: 0.75)),
+                          style: text.bodyLarge?.copyWith(
+                            color: AppColors.ink.withValues(alpha: 0.75),
+                          ),
                         ),
                         const Spacer(),
                         const SizedBox(height: 16),
@@ -85,8 +105,18 @@ class HomeScreen extends StatelessWidget {
                                 : const GameScreen.tutorial(),
                           ),
                         ),
+                        const SizedBox(height: 12),
+                        PlayfulButton(
+                          label: 'Pass & Play',
+                          icon: Icons.groups_rounded,
+                          primary: false,
+                          fontSize: 18,
+                          onPressed: () => _push(context, const PassPlaySetupScreen()),
+                        ),
                         const SizedBox(height: 14),
-                        _DailyCard(onTap: () => _push(context, const DailyScreen())),
+                        _DailyCard(
+                          onTap: () => _push(context, const DailyScreen()),
+                        ),
                         const SizedBox(height: 14),
                         Row(
                           children: [
@@ -94,7 +124,8 @@ class HomeScreen extends StatelessWidget {
                               child: _MenuTile(
                                 icon: Icons.style_rounded,
                                 label: 'Locker',
-                                onTap: () => _push(context, const LockerScreen()),
+                                onTap: () =>
+                                    _push(context, const LockerScreen()),
                               ),
                             ),
                             const SizedBox(width: 10),
@@ -102,7 +133,8 @@ class HomeScreen extends StatelessWidget {
                               child: _MenuTile(
                                 icon: Icons.bar_chart_rounded,
                                 label: 'Stats',
-                                onTap: () => _push(context, const StatsScreen()),
+                                onTap: () =>
+                                    _push(context, const StatsScreen()),
                               ),
                             ),
                             const SizedBox(width: 10),
@@ -143,7 +175,8 @@ class _DailyCard extends StatelessWidget {
     return Semantics(
       container: true,
       button: true,
-      label: 'Daily challenge, ${done ? 'done for today' : 'ready'}, $streak day streak',
+      label:
+          'Daily challenge, ${done ? 'done for today' : 'ready'}, $streak day streak',
       excludeSemantics: true,
       child: GestureDetector(
         onTap: onTap,
@@ -160,7 +193,12 @@ class _DailyCard extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Icon(done ? Icons.check_circle_rounded : Icons.calendar_today_rounded, color: AppColors.ink),
+              Icon(
+                done
+                    ? Icons.check_circle_rounded
+                    : Icons.calendar_today_rounded,
+                color: AppColors.ink,
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -176,14 +214,28 @@ class _DailyCard extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      done ? 'Done for today' : 'Same deal for everyone. Ready!',
-                      style: const TextStyle(fontSize: 12, color: AppColors.ink),
+                      done
+                          ? 'Done for today'
+                          : 'Same deal for everyone. Ready!',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.ink,
+                      ),
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.local_fire_department_rounded, color: AppColors.coralDeep),
-              Text('$streak', style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.ink)),
+              const Icon(
+                Icons.local_fire_department_rounded,
+                color: AppColors.coralDeep,
+              ),
+              Text(
+                '$streak',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.ink,
+                ),
+              ),
             ],
           ),
         ),
@@ -193,7 +245,11 @@ class _DailyCard extends StatelessWidget {
 }
 
 class _MenuTile extends StatelessWidget {
-  const _MenuTile({required this.icon, required this.label, required this.onTap});
+  const _MenuTile({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
 
   final IconData icon;
   final String label;
@@ -201,36 +257,47 @@ class _MenuTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Semantics(
-        container: true,
-        button: true,
-        label: label,
-        excludeSemantics: true,
-        child: GestureDetector(
-          onTap: onTap,
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.85),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: AppShadows.card,
-            ),
-            child: Column(
-              children: [
-                Icon(icon, color: AppColors.coralDeep),
-                const SizedBox(height: 4),
-                Text(label, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: AppColors.ink)),
-              ],
-            ),
-          ),
+    container: true,
+    button: true,
+    label: label,
+    excludeSemantics: true,
+    child: GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.85),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: AppShadows.card,
         ),
-      );
+        child: Column(
+          children: [
+            Icon(icon, color: AppColors.coralDeep),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 12,
+                color: AppColors.ink,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }
 
 class _CardFan extends StatelessWidget {
   const _CardFan();
 
   static const _cards = [
-    (PlayingCard(suit: Suit.hearts, rank: Rank.ace, faceUp: true), -0.28, -46.0),
+    (
+      PlayingCard(suit: Suit.hearts, rank: Rank.ace, faceUp: true),
+      -0.28,
+      -46.0,
+    ),
     (PlayingCard(suit: Suit.spades, rank: Rank.ace), 0.0, 0.0),
     (PlayingCard(suit: Suit.spades, rank: Rank.ace, faceUp: true), 0.28, 46.0),
   ];

@@ -48,7 +48,8 @@ Facts marked *(verified)* were checked against Google's live documentation on 20
 - [ ] **Target audience and content** (see decision in section 0).
 - [ ] **Ads declaration:** No ads.
 - [ ] **App access:** all features available without login.
-- [ ] **Store listing:** short description (80 chars), full description, app icon, feature graphic, phone screenshots *(confirm sizes in Console; commonly 512x512 icon and 1024x500 feature graphic)*. Claude can produce the screenshots from the emulator and draft the copy.
+- [x] **Store art (Claude):** in `docs/release/store/`. App icon `play_icon_512.png` (512x512, 32-bit with alpha), feature graphic `feature_graphic_1024x500.png` and six 1080x1920 (9:16) phone screenshots in `screenshots/`, all 24-bit PNG with no alpha, matching Google's listing specs *(verified)*. Google recommends at least three 9:16 gameplay shots for games; we have six. Regenerate with `STORE=1 OUT_DIR=../docs/release/store/screenshots flutter test tool/render_screens.dart` from `mobile/`, then flatten to 24-bit (PowerShell System.Drawing, as done 2026-10-11).
+- [ ] **Store listing copy:** short description (80 chars) and full description (Claude can draft).
 
 ## 5. Play Games Services (You in Console, Claude in code)
 

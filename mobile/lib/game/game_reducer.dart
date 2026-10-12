@@ -16,7 +16,9 @@ class StartGame extends GameAction {
 
 // Next round with the same players (web: RESTART_GAME).
 class RestartRound extends GameAction {
-  const RestartRound();
+  // Seat index that moves first (pass-and-play rotates it; 1-human games start at 0).
+  const RestartRound({this.starter = 0});
+  final int starter;
 }
 
 class DrawCard extends GameAction {
@@ -42,13 +44,13 @@ GameState gameReducer(GameState state, GameAction action, [Random? random]) {
   final isPlaying = state.phase == GamePhase.playing;
 
   return switch (action) {
-    // A rematch keeps the same table of opponents.
-    StartGame(:final matchTarget) => createInitialGameState(
+    // A rematch keeps the same table, seat for seat.
+    StartGame(:final matchTarget) => createTableState(
+        seats: [for (final p in state.players) (name: p.name, isAI: p.isAI)],
         matchTarget: matchTarget,
-        opponentNames: [for (final p in state.players) if (p.isAI) p.name],
         random: random,
       ),
-    RestartRound() => _restartRound(state, random),
+    RestartRound(:final starter) => _restartRound(state, starter, random),
     DrawCard() => (isPlaying && state.turnAction == TurnAction.draw)
         ? drawCard(state, random).copyWith(selectedCardId: null)
         : state,
@@ -62,7 +64,7 @@ GameState gameReducer(GameState state, GameAction action, [Random? random]) {
   };
 }
 
-GameState _restartRound(GameState state, Random? random) {
+GameState _restartRound(GameState state, int starter, Random? random) {
   final dealt = dealCards(shuffleDeck(createDeck(), random), state.players.length, 5);
   return state.copyWith(
     deck: dealt.remainingDeck,
@@ -71,7 +73,7 @@ GameState _restartRound(GameState state, Random? random) {
       for (var i = 0; i < state.players.length; i++)
         state.players[i].copyWith(hand: dealt.playerHands[i]),
     ],
-    currentPlayerIndex: 0,
+    currentPlayerIndex: starter.clamp(0, state.players.length - 1),
     phase: GamePhase.playing,
     winner: null,
     turnAction: TurnAction.draw,

@@ -78,7 +78,8 @@ class PlayingCardView extends StatelessWidget {
           body,
           if (isSelected)
             Positioned(
-              top: -20,
+              // Clears the 12px selection lift so the corner rank stays visible.
+              top: -34,
               child: _TapToPlayPill(fontSize: (width * 0.11).clamp(8, 12)),
             ),
         ],

@@ -25,6 +25,7 @@ import '../widgets/felt_table.dart';
 import '../widgets/playful_background.dart';
 import '../widgets/playful_button.dart';
 import '../widgets/win_pips.dart';
+import 'pass_play_setup_screen.dart';
 import 'settings_sheet.dart';
 import 'setup_screen.dart';
 
@@ -39,7 +40,8 @@ class GameScreen extends StatefulWidget {
     @visibleForTesting this.controller,
     @visibleForTesting this.sounds,
     @visibleForTesting this.chatRandom,
-  }) : isTutorial = false;
+  }) : isTutorial = false,
+       playerNames = null;
 
   // Daily challenge: one round against Sharp, dealt from the date's seed so
   // every player gets the same opening.
@@ -53,7 +55,8 @@ class GameScreen extends StatefulWidget {
        difficulty = AIDifficulty.hard,
        matchTarget = 1,
        opponents = 1,
-       isTutorial = false;
+       isTutorial = false,
+       playerNames = null;
 
   // First-run tutorial: a scripted hand with coaching; never recorded.
   const GameScreen.tutorial({
@@ -65,18 +68,35 @@ class GameScreen extends StatefulWidget {
        difficulty = AIDifficulty.easy,
        matchTarget = 1,
        opponents = 1,
-       isTutorial = true;
+       isTutorial = true,
+       playerNames = null;
+
+  // Pass-and-play: 2-4 people share one phone. Hands are hidden behind a
+  // "pass to" screen between turns, and nothing touches the player profile.
+  const GameScreen.passAndPlay({
+    super.key,
+    required List<String> this.playerNames,
+    required this.matchTarget,
+    this.controller,
+    this.sounds,
+  }) : dailyDate = null,
+       difficulty = AIDifficulty.easy,
+       opponents = 0,
+       isTutorial = false,
+       chatRandom = null;
 
   final AIDifficulty difficulty;
   final int matchTarget;
-  final int opponents; // computer opponents, 1-3
+  final int opponents; // computer opponents, 1-3 (0 in pass-and-play)
   final DateTime? dailyDate;
   final bool isTutorial;
+  final List<String>? playerNames; // set only in pass-and-play
   final GameController? controller;
   final SoundPlayer? sounds;
   final math.Random? chatRandom; // chatter dice, injectable for tests
 
   bool get isDaily => dailyDate != null;
+  bool get isPassAndPlay => playerNames != null;
 
   @override
   State<GameScreen> createState() => _GameScreenState();
@@ -85,7 +105,9 @@ class GameScreen extends StatefulWidget {
 class _GameScreenState extends State<GameScreen> {
   // Who sits at the table. The daily pick is seeded so everyone meets the same
   // opponent; the tutorial always seats friendly Rosie.
-  late final List<Personality> _cast = widget.isTutorial
+  late final List<Personality> _cast = widget.isPassAndPlay
+      ? const []
+      : widget.isTutorial
       ? [personalityByName('Rosie')]
       : pickOpponents(
           widget.difficulty,
@@ -101,6 +123,9 @@ class _GameScreenState extends State<GameScreen> {
         difficulty: widget.difficulty,
         matchTarget: widget.matchTarget,
         opponentNames: [for (final p in _cast) p.name],
+        seats: widget.isPassAndPlay
+            ? [for (final name in widget.playerNames!) (name: name, isAI: false)]
+            : null,
         random: widget.isDaily
             ? math.Random(dailySeed(widget.dailyDate!))
             : null,
@@ -121,6 +146,21 @@ class _GameScreenState extends State<GameScreen> {
   int _bubbleSeq = 0;
   Timer? _bubbleTimer;
   static const _bubbleDuration = Duration(milliseconds: 2200);
+
+  // Pass-and-play: whoever last confirmed "show my cards". Until the current
+  // player does, their hand stays behind the pass screen.
+  String? _revealedFor;
+
+  bool _needsPass(GameState s) =>
+      widget.isPassAndPlay &&
+      s.phase == GamePhase.playing &&
+      !s.currentPlayer.isAI &&
+      _revealedFor != s.currentPlayer.id;
+
+  // The player whose hand sits at the bottom of the screen.
+  Player _viewer(GameState s) => widget.isPassAndPlay
+      ? (s.players.where((p) => p.id == _revealedFor).firstOrNull ?? s.players.first)
+      : s.players.firstWhere((p) => !p.isAI);
 
   // Presentation state only: read from state transitions, never fed back.
   late GameState _prev; // set in initState, before any change can arrive
@@ -191,7 +231,8 @@ class _GameScreenState extends State<GameScreen> {
     final arrival = t.discardArrival;
     if (arrival != null && !_reduceMotion) _launchFlight(arrival);
 
-    final celebrate = t.humanWon && t.prev.phase != next.phase;
+    // In pass-and-play every winner is a person at the table, so always celebrate.
+    final celebrate = (t.humanWon || widget.isPassAndPlay) && t.prev.phase != next.phase;
     if (celebrate && !_reduceMotion) {
       setState(
         () => _confetti = (
@@ -222,7 +263,7 @@ class _GameScreenState extends State<GameScreen> {
         t.prev.phase == GamePhase.playing &&
         (t.next.phase == GamePhase.roundEnd ||
             t.next.phase == GamePhase.gameEnd);
-    if (profile == null || !ended || widget.isTutorial) return;
+    if (profile == null || !ended || widget.isTutorial || widget.isPassAndPlay) return;
 
     profile.recordRound(
       widget.difficulty,
@@ -283,8 +324,19 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   void _changeSettings() => Navigator.of(context).pushReplacement(
-    MaterialPageRoute<void>(builder: (_) => const SetupScreen()),
+    MaterialPageRoute<void>(
+      builder: (_) => widget.isPassAndPlay ? const PassPlaySetupScreen() : const SetupScreen(),
+    ),
   );
+
+  // Pass-and-play rotates the first move to the player after the round's winner,
+  // so the same person doesn't always start. Solo games keep the web rule (you start).
+  void _nextRound() {
+    final s = _game.state;
+    if (!widget.isPassAndPlay) return _game.nextRound();
+    final winner = s.players.indexWhere((p) => p.id == s.winner);
+    _game.nextRound(starter: (winner + 1) % s.players.length);
+  }
 
   // Finishing or skipping the tutorial marks it done and goes to match setup.
   void _finishTutorial() {
@@ -300,251 +352,282 @@ class _GameScreenState extends State<GameScreen> {
     final backStyle = _settings.cardBack;
     final animate = !_reduceMotion;
 
-    return Scaffold(
-      body: PlayfulBackground(
-        child: ListenableBuilder(
-          listenable: _game,
-          builder: (context, _) {
-            final s = _game.state;
-            final human = s.players.firstWhere((p) => !p.isAI);
-            final opponents = s.players.where((p) => p.isAI).toList();
-            final humanWon = s.winner == human.id;
+    // The board is a spatial layout (card art already ignores text scaling), so
+    // system font size is capped here; every other screen reflows at full scale.
+    return MediaQuery.withClampedTextScaling(
+      maxScaleFactor: 1.3,
+      child: Scaffold(
+        body: PlayfulBackground(
+          child: ListenableBuilder(
+            listenable: _game,
+            builder: (context, _) {
+              final s = _game.state;
+              final viewer = _viewer(s);
+              // Everyone else, in turn order starting after the viewer.
+              final vi = s.players.indexOf(viewer);
+              final opponents = [
+                for (var i = 1; i < s.players.length; i++) s.players[(vi + i) % s.players.length],
+              ];
+              // "You" only means something when one person holds the phone.
+              final humanWon = !widget.isPassAndPlay && s.winner == viewer.id;
+              final passTo = _needsPass(s) ? s.currentPlayer : null;
 
-            return Stack(
-              key: _stackKey,
-              children: [
-                GestureDetector(
-                  behavior: HitTestBehavior.translucent,
-                  onTap: _game.clearSelection,
-                  child: SafeArea(
-                    child: LayoutBuilder(
-                      builder: (context, box) {
-                        // Cards scale with both width and height so short phones still fit.
-                        final handCard = [
-                          76.0,
-                          (box.maxWidth - 24 - 40) / 5,
-                          box.maxHeight * 0.1,
-                        ].reduce(math.min);
-                        final tableCard = [
-                          84.0,
-                          box.maxWidth / 4.4,
-                          box.maxHeight * 0.1,
-                        ].reduce(math.min);
-                        _tableCard = tableCard;
-                        // Seats share the width; crowded seats overlap their cards.
-                        final seatWidth =
-                            (box.maxWidth - 24 - (opponents.length - 1) * 8) /
-                            opponents.length;
-                        final crowded = opponents.length > 1;
-                        final aiCard = crowded
-                            ? math.min(40.0, (seatWidth - 16) / 2.8)
-                            : math.min(52.0, handCard * 0.7);
+              return Stack(
+                key: _stackKey,
+                children: [
+                  GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onTap: _game.clearSelection,
+                    child: SafeArea(
+                      child: LayoutBuilder(
+                        builder: (context, box) {
+                          // Cards scale with both width and height so short phones still fit.
+                          final handCard = [
+                            76.0,
+                            (box.maxWidth - 24 - 40) / 5,
+                            box.maxHeight * 0.1,
+                          ].reduce(math.min);
+                          final tableCard = [
+                            84.0,
+                            box.maxWidth / 4.4,
+                            box.maxHeight * 0.1,
+                          ].reduce(math.min);
+                          _tableCard = tableCard;
+                          // Seats share the width; crowded seats overlap their cards.
+                          final seatWidth =
+                              (box.maxWidth - 24 - (opponents.length - 1) * 8) /
+                              opponents.length;
+                          final crowded = opponents.length > 1;
+                          final aiCard = crowded
+                              ? math.min(40.0, (seatWidth - 16) / 2.8)
+                              : math.min(52.0, handCard * 0.7);
 
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                          child: Column(
-                            children: [
-                              _Header(
-                                humanWins: human.wins,
-                                target: s.matchTarget,
-                                onSettings: () => showSettingsSheet(context),
-                                onSkipTutorial: widget.isTutorial
-                                    ? _finishTutorial
-                                    : null,
-                              ),
-                              const SizedBox(height: 10),
-                              if (widget.isTutorial)
-                                _CoachBubble(
-                                  text: tutorialHint(
-                                    s,
-                                    isFirstTurn: s.discardPile.length == 1,
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            child: Column(
+                              children: [
+                                _Header(
+                                  humanWins: viewer.wins,
+                                  viewerName: widget.isPassAndPlay ? viewer.name : null,
+                                  target: s.matchTarget,
+                                  onSettings: () => showSettingsSheet(context),
+                                  onSkipTutorial: widget.isTutorial
+                                      ? _finishTutorial
+                                      : null,
+                                ),
+                                const SizedBox(height: 10),
+                                if (widget.isTutorial)
+                                  _CoachBubble(
+                                    text: tutorialHint(
+                                      s,
+                                      isFirstTurn: s.discardPile.length == 1,
+                                    ),
+                                  )
+                                else
+                                  _StatusBanner(
+                                    state: s,
+                                    humanWon: humanWon,
+                                    goldBanner: humanWon || widget.isPassAndPlay,
+                                    secondPerson: !widget.isPassAndPlay,
                                   ),
-                                )
-                              else
-                                _StatusBanner(state: s, humanWon: humanWon),
-                              const SizedBox(height: 10),
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  for (
-                                    var i = 0;
-                                    i < opponents.length;
-                                    i++
-                                  ) ...[
-                                    if (i > 0) const SizedBox(width: 8),
-                                    Expanded(
-                                      // Bubbles follow this link from the overlay layer.
-                                      child: CompositedTransformTarget(
-                                        link: _seatLinks.putIfAbsent(
-                                          opponents[i].id,
-                                          LayerLink.new,
+                                const SizedBox(height: 10),
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    for (
+                                      var i = 0;
+                                      i < opponents.length;
+                                      i++
+                                    ) ...[
+                                      if (i > 0) const SizedBox(width: 8),
+                                      Expanded(
+                                        // Bubbles follow this link from the overlay layer.
+                                        child: CompositedTransformTarget(
+                                          link: _seatLinks.putIfAbsent(
+                                            opponents[i].id,
+                                            LayerLink.new,
+                                          ),
+                                          child: _OpponentSeat(
+                                            player: opponents[i],
+                                            persona: _personas[opponents[i].id],
+                                            seatColor: _seatColors[s.players.indexOf(opponents[i]) % _seatColors.length],
+                                            active:
+                                                s.phase == GamePhase.playing &&
+                                                s.currentPlayer.id ==
+                                                    opponents[i].id,
+                                            target: s.matchTarget,
+                                            hand: HandView(
+                                              cards: opponents[i].hand,
+                                              cardWidth: aiCard,
+                                              backStyle: backStyle,
+                                              faceDown: true,
+                                              gap: crowded
+                                                  ? -aiCard * 0.55
+                                                  : null,
+                                              dealId: _dealId,
+                                              dealFromAbove: false,
+                                              animate: animate,
+                                              keyFor: (id) =>
+                                                  _aiCardKeys.putIfAbsent(
+                                                    id,
+                                                    GlobalKey.new,
+                                                  ),
+                                            ),
+                                          ),
                                         ),
-                                        child: _OpponentSeat(
-                                          player: opponents[i],
-                                          persona: _personas[opponents[i].id],
-                                          active:
-                                              s.phase == GamePhase.playing &&
-                                              s.currentPlayer.id ==
-                                                  opponents[i].id,
-                                          target: s.matchTarget,
-                                          hand: HandView(
-                                            cards: opponents[i].hand,
-                                            cardWidth: aiCard,
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
+                                Expanded(
+                                  child: FeltTable(
+                                    felt: _settings.felt,
+                                    // Fills the felt; the contents scale down rather than overflow on short phones.
+                                    child: SizedBox.expand(
+                                      child: Center(
+                                        child: FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          child: _TableCenter(
+                                            game: _game,
+                                            cardWidth: tableCard,
                                             backStyle: backStyle,
-                                            faceDown: true,
-                                            gap: crowded
-                                                ? -aiCard * 0.55
-                                                : null,
-                                            dealId: _dealId,
-                                            dealFromAbove: false,
-                                            animate: animate,
-                                            keyFor: (id) => _aiCardKeys
-                                                .putIfAbsent(id, GlobalKey.new),
+                                            deckKey: _deckKey,
+                                            discardKey: _discardKey,
+                                            hiddenDiscardId: _flights.isEmpty
+                                                ? null
+                                                : _flights.last.card.id,
                                           ),
                                         ),
                                       ),
                                     ),
-                                  ],
-                                ],
-                              ),
-                              const SizedBox(height: 10),
-                              Expanded(
-                                child: FeltTable(
-                                  felt: _settings.felt,
-                                  // Fills the felt; the contents scale down rather than overflow on short phones.
-                                  child: SizedBox.expand(
-                                    child: Center(
-                                      child: FittedBox(
-                                        fit: BoxFit.scaleDown,
-                                        child: _TableCenter(
-                                          game: _game,
-                                          cardWidth: tableCard,
-                                          backStyle: backStyle,
-                                          deckKey: _deckKey,
-                                          discardKey: _discardKey,
-                                          hiddenDiscardId: _flights.isEmpty
-                                              ? null
-                                              : _flights.last.card.id,
-                                        ),
-                                      ),
-                                    ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(height: 10),
-                              _HandLabel(
-                                'Your hand',
-                                active: _game.isHumanTurn,
-                                color: AppColors.coral,
-                              ),
-                              const SizedBox(height: 2),
-                              HandView(
-                                cards: human.hand,
-                                cardWidth: handCard,
-                                backStyle: backStyle,
-                                playableIds: {
-                                  for (final c in human.hand)
-                                    if (_game.isPlayable(c)) c.id,
-                                },
-                                selectedId: s.selectedCardId,
-                                onCardTap: _game.tapCard,
-                                dealId: _dealId,
-                                animate: animate,
-                                keyFor: (id) => _humanCardKeys.putIfAbsent(
-                                  id,
-                                  GlobalKey.new,
+                                const SizedBox(height: 10),
+                                _HandLabel(
+                                  widget.isPassAndPlay ? "${viewer.name}'s hand" : 'Your hand',
+                                  active: _game.isHumanTurn,
+                                  color: AppColors.coral,
                                 ),
-                              ),
-                              const SizedBox(height: 8),
-                              SizedBox(
-                                height: 56,
-                                child: s.phase == GamePhase.roundEnd
-                                    ? PlayfulButton(
-                                        label: 'Next round',
-                                        icon: Icons.replay_rounded,
-                                        onPressed: _game.nextRound,
-                                      )
-                                    : null,
-                              ),
-                            ],
-                          ),
-                        );
-                      },
+                                const SizedBox(height: 2),
+                                HandView(
+                                  cards: viewer.hand,
+                                  cardWidth: handCard,
+                                  backStyle: backStyle,
+                                  playableIds: {
+                                    for (final c in viewer.hand)
+                                      if (_game.isPlayable(c)) c.id,
+                                  },
+                                  selectedId: s.selectedCardId,
+                                  onCardTap: _game.tapCard,
+                                  dealId: _dealId,
+                                  animate: animate,
+                                  keyFor: (id) => _humanCardKeys.putIfAbsent(
+                                    id,
+                                    GlobalKey.new,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                SizedBox(
+                                  height: 56,
+                                  child: s.phase == GamePhase.roundEnd
+                                      ? PlayfulButton(
+                                          label: 'Next round',
+                                          icon: Icons.replay_rounded,
+                                          onPressed: _nextRound,
+                                        )
+                                      : null,
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
                     ),
                   ),
-                ),
-                // Speech bubbles ride above the felt, pinned under their seat.
-                if (_bubble case final b?)
-                  if (_seatLinks[b.playerId] case final link?)
-                    CompositedTransformFollower(
-                      link: link,
-                      showWhenUnlinked: false,
-                      targetAnchor: Alignment.bottomCenter,
-                      followerAnchor: Alignment.topCenter,
-                      child: IgnorePointer(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 200),
-                          child: TweenAnimationBuilder<double>(
-                            key: ValueKey(b.id),
-                            tween: Tween(begin: 0.6, end: 1),
-                            duration: const Duration(milliseconds: 180),
-                            curve: Curves.easeOutBack,
-                            builder: (context, scale, child) => Transform.scale(
-                              scale: scale,
-                              alignment: Alignment.topCenter,
-                              child: child,
-                            ),
-                            child: _SpeechBubble(
-                              text: b.line,
-                              color:
-                                  _personas[b.playerId]?.color ??
-                                  const Color(0xFF5F7ADB),
+                  // Speech bubbles ride above the felt, pinned under their seat.
+                  if (_bubble case final b?)
+                    if (_seatLinks[b.playerId] case final link?)
+                      CompositedTransformFollower(
+                        link: link,
+                        showWhenUnlinked: false,
+                        targetAnchor: Alignment.bottomCenter,
+                        followerAnchor: Alignment.topCenter,
+                        child: IgnorePointer(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 200),
+                            child: TweenAnimationBuilder<double>(
+                              key: ValueKey(b.id),
+                              tween: Tween(begin: 0.6, end: 1),
+                              duration: const Duration(milliseconds: 180),
+                              curve: Curves.easeOutBack,
+                              builder: (context, scale, child) =>
+                                  Transform.scale(
+                                    scale: scale,
+                                    alignment: Alignment.topCenter,
+                                    child: child,
+                                  ),
+                              child: _SpeechBubble(
+                                text: b.line,
+                                color:
+                                    _personas[b.playerId]?.color ??
+                                    const Color(0xFF5F7ADB),
+                              ),
                             ),
                           ),
                         ),
                       ),
+                  if (s.phase == GamePhase.gameEnd)
+                    _MatchOverDialog(
+                      humanWon: humanWon,
+                      players: s.players,
+                      nameEveryone: widget.isPassAndPlay,
+                      winnerName:
+                          s.players
+                              .where((p) => p.id == s.winner)
+                              .firstOrNull
+                              ?.name ??
+                          '',
+                      target: s.matchTarget,
+                      summary: _summary,
+                      isDaily: widget.isDaily,
+                      isTutorial: widget.isTutorial,
+                      onTutorialDone: _finishTutorial,
+                      onRematch: _game.rematch,
+                      onChangeSettings: _changeSettings,
+                      onDone: () =>
+                          Navigator.of(context).popUntil((r) => r.isFirst),
                     ),
-                if (s.phase == GamePhase.gameEnd)
-                  _MatchOverDialog(
-                    humanWon: humanWon,
-                    players: s.players,
-                    winnerName:
-                        s.players
-                            .where((p) => p.id == s.winner)
-                            .firstOrNull
-                            ?.name ??
-                        '',
-                    target: s.matchTarget,
-                    summary: _summary,
-                    isDaily: widget.isDaily,
-                    isTutorial: widget.isTutorial,
-                    onTutorialDone: _finishTutorial,
-                    onRematch: _game.rematch,
-                    onChangeSettings: _changeSettings,
-                    onDone: () =>
-                        Navigator.of(context).popUntil((r) => r.isFirst),
-                  ),
-                for (final flight in _flights)
-                  FlyingCard(
-                    key: ObjectKey(flight),
-                    flight: flight,
-                    onDone: () => setState(() => _flights.remove(flight)),
-                  ),
-                if (_confetti case final c?)
-                  Positioned.fill(
-                    child: ConfettiBurst(
-                      key: ValueKey(c.id),
-                      count: c.count,
-                      style: _settings.celebration,
-                      onDone: () => setState(() => _confetti = null),
+                  for (final flight in _flights)
+                    FlyingCard(
+                      key: ObjectKey(flight),
+                      flight: flight,
+                      onDone: () => setState(() => _flights.remove(flight)),
                     ),
-                  ),
-              ],
-            );
-          },
+                  if (_confetti case final c?)
+                    Positioned.fill(
+                      child: ConfettiBurst(
+                        key: ValueKey(c.id),
+                        count: c.count,
+                        style: _settings.celebration,
+                        onDone: () => setState(() => _confetti = null),
+                      ),
+                    ),
+                  // Last, so it hides every hand (and any card still in flight).
+                  if (passTo != null)
+                    Positioned.fill(
+                      child: _PassCover(
+                        name: passTo.name,
+                        onReveal: () => setState(() => _revealedFor = passTo.id),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
         ),
       ),
     );
@@ -557,12 +640,14 @@ class _Header extends StatelessWidget {
     required this.target,
     required this.onSettings,
     this.onSkipTutorial,
+    this.viewerName,
   });
 
   final int humanWins;
   final int target;
   final VoidCallback onSettings;
   final VoidCallback? onSkipTutorial; // set only in the tutorial
+  final String? viewerName; // pass-and-play: whose score this chip shows
 
   @override
   Widget build(BuildContext context) => Row(
@@ -579,15 +664,22 @@ class _Header extends StatelessWidget {
       ),
       const Spacer(),
       if (onSkipTutorial != null)
-        TextButton.icon(
-          onPressed: onSkipTutorial,
-          icon: const Icon(Icons.skip_next_rounded),
-          label: const Text('Skip tutorial'),
+        Flexible(
+          flex: 4,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: onSkipTutorial,
+              icon: const Icon(Icons.skip_next_rounded),
+              label: const Text('Skip tutorial'),
+            ),
+          ),
         )
       else
         // Opponents show their own scores in their seats.
         ScoreChip(
-          label: 'You',
+          label: viewerName ?? 'You',
           wins: humanWins,
           target: target,
           color: AppColors.coral,
@@ -596,7 +688,11 @@ class _Header extends StatelessWidget {
   );
 }
 
-// One computer opponent: name, round-win pips, turn highlight and face-down hand.
+// Avatar colors for people at a pass-and-play table, by seat.
+const _seatColors = [AppColors.coral, Color(0xFF42A5F5), AppColors.gold, Color(0xFF26A69A)];
+
+// Another player at the table (a computer, or a person in pass-and-play): name,
+// round-win pips, turn highlight and face-down hand.
 class _OpponentSeat extends StatelessWidget {
   const _OpponentSeat({
     required this.player,
@@ -604,6 +700,7 @@ class _OpponentSeat extends StatelessWidget {
     required this.target,
     required this.hand,
     this.persona,
+    this.seatColor,
   });
 
   final Player player;
@@ -611,6 +708,7 @@ class _OpponentSeat extends StatelessWidget {
   final int target;
   final Widget hand;
   final Personality? persona;
+  final Color? seatColor; // avatar color for people (pass-and-play)
 
   @override
   Widget build(BuildContext context) => AnimatedContainer(
@@ -639,7 +737,7 @@ class _OpponentSeat extends StatelessWidget {
                 children: [
                   _Avatar(
                     name: player.name,
-                    color: persona?.color ?? const Color(0xFF94A3B8),
+                    color: persona?.color ?? seatColor ?? const Color(0xFF94A3B8),
                   ),
                   const SizedBox(width: 5),
                   Flexible(
@@ -670,6 +768,73 @@ class _OpponentSeat extends StatelessWidget {
         const SizedBox(height: 6),
         hand,
       ],
+    ),
+  );
+}
+
+// Pass-and-play hand-off: covers the table until the next player confirms
+// they're the one holding the phone.
+class _PassCover extends StatelessWidget {
+  const _PassCover({required this.name, required this.onReveal});
+
+  final String name;
+  final VoidCallback onReveal;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    scopesRoute: true,
+    explicitChildNodes: true,
+    namesRoute: true,
+    label: 'Pass the phone to $name',
+    child: DecoratedBox(
+      decoration: const BoxDecoration(
+        gradient: RadialGradient(
+          center: Alignment(0, -0.2),
+          radius: 1.1,
+          colors: [AppColors.felt, AppColors.feltDeep],
+        ),
+      ),
+      child: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.swap_horiz_rounded, size: 56, color: AppColors.cream),
+                const SizedBox(height: 16),
+                const Text(
+                  'Pass the phone to',
+                  style: TextStyle(color: AppColors.cream, fontSize: 18, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  name,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: displayFontFamily(context),
+                    fontSize: 44,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.gold,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  'No peeking, everyone else!',
+                  style: TextStyle(color: AppColors.cream),
+                ),
+                const SizedBox(height: 28),
+                PlayfulButton(
+                  label: "I'm $name, show my cards",
+                  icon: Icons.visibility_rounded,
+                  fontSize: 18,
+                  onPressed: onReveal,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     ),
   );
 }
@@ -783,10 +948,17 @@ class _CoachBubble extends StatelessWidget {
 }
 
 class _StatusBanner extends StatelessWidget {
-  const _StatusBanner({required this.state, required this.humanWon});
+  const _StatusBanner({
+    required this.state,
+    required this.humanWon,
+    required this.goldBanner,
+    required this.secondPerson,
+  });
 
   final GameState state;
   final bool humanWon;
+  final bool goldBanner; // a person at this phone won (always, in pass-and-play)
+  final bool secondPerson; // speak to the single player as "you"
 
   String get _winnerName =>
       state.players.where((p) => p.id == state.winner).firstOrNull?.name ?? '';
@@ -816,7 +988,7 @@ class _StatusBanner extends StatelessWidget {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(18),
                     gradient: LinearGradient(
-                      colors: humanWon
+                      colors: goldBanner
                           ? const [AppColors.gold, AppColors.sunny]
                           : const [AppColors.softPurple, Color(0xFF5F7ADB)],
                     ),
@@ -830,7 +1002,7 @@ class _StatusBanner extends StatelessWidget {
                       fontFamily: displayFontFamily(context),
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
-                      color: humanWon ? AppColors.ink : Colors.white,
+                      color: goldBanner ? AppColors.ink : Colors.white,
                     ),
                   ),
                 )
@@ -845,7 +1017,10 @@ class _StatusBanner extends StatelessWidget {
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
-                    state.message,
+                    // The match dialog announces the winner; don't repeat it behind it.
+                    state.phase == GamePhase.gameEnd
+                        ? 'Match over'
+                        : displayMessage(state, secondPerson: secondPerson),
                     style: const TextStyle(
                       fontWeight: FontWeight.w600,
                       color: AppColors.ink,
@@ -980,6 +1155,7 @@ class _MatchOverDialog extends StatelessWidget {
   const _MatchOverDialog({
     required this.humanWon,
     required this.players,
+    required this.nameEveryone,
     required this.winnerName,
     required this.target,
     required this.summary,
@@ -993,6 +1169,7 @@ class _MatchOverDialog extends StatelessWidget {
 
   final bool humanWon;
   final List<Player> players;
+  final bool nameEveryone; // pass-and-play: chips show names, not "You"
   final String winnerName;
   final int target;
   final MatchSummary? summary;
@@ -1046,7 +1223,7 @@ class _MatchOverDialog extends StatelessWidget {
                           ? Icons.calendar_today_rounded
                           : Icons.emoji_events_rounded,
                       size: 56,
-                      color: humanWon
+                      color: humanWon || nameEveryone
                           ? AppColors.gold
                           : const Color(0xFF94A3B8),
                     ),
@@ -1077,7 +1254,7 @@ class _MatchOverDialog extends StatelessWidget {
                         children: [
                           for (final p in players)
                             ScoreChip(
-                              label: p.isAI ? p.name : 'You',
+                              label: p.isAI || nameEveryone ? p.name : 'You',
                               wins: p.wins,
                               target: target,
                               color: p.isAI

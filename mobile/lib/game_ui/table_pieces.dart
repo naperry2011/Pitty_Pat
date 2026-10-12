@@ -49,7 +49,7 @@ class HandView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final gap = this.gap ?? (faceDown ? 4.0 : 8.0);
-    final lift = faceDown ? 0.0 : 24.0; // room for the selected lift + TAP TO PLAY pill
+    final lift = faceDown ? 0.0 : 36.0; // room for the selected lift + TAP TO PLAY pill
     final height = cardWidth * 1.5 + lift;
 
     return SizedBox(

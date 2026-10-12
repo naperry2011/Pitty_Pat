@@ -141,15 +141,41 @@ GameState createInitialGameState({
   Random? random,
 }) {
   assert(opponentNames.isNotEmpty && opponentNames.length <= maxOpponents);
-  final dealt = dealCards(shuffleDeck(createDeck(), random), opponentNames.length + 1, 5);
+  return createTableState(
+    seats: [
+      (name: playerName, isAI: false),
+      for (final name in opponentNames) (name: name, isAI: true),
+    ],
+    matchTarget: matchTarget,
+    random: random,
+  );
+}
+
+// Who sits at the table, in turn order. Pass-and-play seats 2-4 humans.
+typedef Seat = ({String name, bool isAI});
+
+// Ids stay stable for the 1-human case: the human is player1, computers ai1..aiN.
+GameState createTableState({
+  required List<Seat> seats,
+  int matchTarget = 5,
+  Random? random,
+}) {
+  assert(seats.length >= 2 && seats.length <= maxOpponents + 1);
+  final dealt = dealCards(shuffleDeck(createDeck(), random), seats.length, 5);
+  var humans = 0;
+  var computers = 0;
 
   return GameState(
     deck: dealt.remainingDeck,
     discardPile: dealt.discardPile,
     players: [
-      Player(id: 'player1', name: playerName, hand: dealt.playerHands[0], isAI: false),
-      for (var i = 0; i < opponentNames.length; i++)
-        Player(id: 'ai${i + 1}', name: opponentNames[i], hand: dealt.playerHands[i + 1], isAI: true),
+      for (var i = 0; i < seats.length; i++)
+        Player(
+          id: seats[i].isAI ? 'ai${++computers}' : 'player${++humans}',
+          name: seats[i].name,
+          hand: dealt.playerHands[i],
+          isAI: seats[i].isAI,
+        ),
     ],
     currentPlayerIndex: 0,
     phase: GamePhase.playing,

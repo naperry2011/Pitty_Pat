@@ -80,6 +80,32 @@ void main() {
     expect(StateTransition(prev, playCard(prev, '5-spades')).cues, [SoundCue.slide, SoundCue.matchWin]);
   });
 
+  group('displayMessage speaks to the player as "you"', () {
+    final base = _withHands([card(Rank.five, Suit.spades)], [card(Rank.nine, Suit.clubs)]);
+    String shown(String m) => displayMessage(base.copyWith(message: m));
+
+    test('human messages', () {
+      expect(shown("Player's turn"), 'Your turn');
+      expect(shown('Player played a 9'), 'You played a 9');
+      expect(shown('Player drew and played a Q!'), 'You drew and played a Q!');
+      expect(shown('Player wins the match!'), 'You win the match!');
+      expect(shown('Player wins the round!'), 'You win the round!');
+    });
+
+    test('pass-and-play names everyone, including the opening greeting', () {
+      final pp = base.copyWith(message: 'Game started! Your turn.');
+      expect(displayMessage(pp, secondPerson: false), "Player's turn");
+      expect(displayMessage(base.copyWith(message: 'Player played a 9'), secondPerson: false), 'Player played a 9');
+    });
+
+    test('everything else passes through', () {
+      expect(shown("Computer's turn"), "Computer's turn");
+      expect(shown('Computer played a 9'), 'Computer played a 9');
+      expect(shown("That card doesn't match the rank!"), "That card doesn't match the rank!");
+      expect(shown('Game started! Your turn.'), 'Game started! Your turn.');
+    });
+  });
+
   test('next round and rematch are new deals with a shuffle', () {
     final ended = _withHands(const [], [card(Rank.nine, Suit.clubs)]).copyWith(phase: GamePhase.roundEnd);
     final t = StateTransition(ended, gameReducer(ended, const RestartRound()));

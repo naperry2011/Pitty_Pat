@@ -190,4 +190,13 @@ Tutorial, tables and personalities:
 * mobile/lib/game/game_engine.dart - createInitialGameState(opponentNames:) supports 1-3 computer opponents (2-4 players; the web stays 1v1); StartGame rematch keeps the table
 * mobile/lib/game/personalities.dart - 9-character roster (3 per difficulty), pickOpponents, pure reactionFor(transition) -> speech line; presentation only
 * mobile/lib/screens/game_screen.dart - opponent seat row (avatar, pips, overlapped hand), speech bubbles via CompositedTransformFollower above the felt, coach bubble in tutorial mode
-* mobile/tool/render_screens.dart - renders screens to PNG without a device (OUT_DIR=... flutter test tool/render_screens.dart); layout review + store screenshots
+* mobile/tool/render_screens.dart - renders screens to PNG without a device (layout review; STORE=1 renders the 1080x1920 Play Store set into docs/release/store/screenshots)
+* mobile/test/screens/large_text_test.dart - every screen at 1.3x and 2x system text on 360x640 and 411x914 (game board caps text at 1.3x)
+
+Pass-and-play (2-4 people, one phone):
+
+* mobile/lib/game/game_engine.dart - createTableState(seats:) for any mix of humans/computers (Seat = (name, isAI)); createInitialGameState delegates to it
+* mobile/lib/game/game_reducer.dart - StartGame keeps every seat; RestartRound(starter:) picks who moves first
+* mobile/lib/game/game_controller.dart - tapCard reads the current player's hand; nextRound(starter:)
+* mobile/lib/screens/pass_play_setup_screen.dart - table size, remembered names (resolvePassNames: trimmed, capped at 12, unique), match length
+* mobile/lib/screens/game_screen.dart - GameScreen.passAndPlay: viewer = whoever revealed last, "Pass the phone to" cover (_PassCover) before each human turn, seats in turn order after the viewer, winner-after rotation, never records to the profile

@@ -38,7 +38,11 @@ class LockerScreen extends StatelessWidget {
                 const TabBar(
                   labelColor: AppColors.coralDeep,
                   indicatorColor: AppColors.coral,
-                  tabs: [Tab(text: 'Card backs'), Tab(text: 'Felts'), Tab(text: 'Wins')],
+                  tabs: [
+                    Tab(text: 'Card backs'),
+                    Tab(text: 'Felts'),
+                    Tab(text: 'Wins'),
+                  ],
                 ),
                 const Expanded(
                   child: TabBarView(
@@ -66,13 +70,15 @@ class _Grid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = catalog.where((c) => c.kind == kind).toList();
+    // Fixed preview area plus room for two text lines at the current text size.
+    final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
     return GridView.builder(
       padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         mainAxisSpacing: 14,
         crossAxisSpacing: 14,
-        childAspectRatio: 0.78,
+        mainAxisExtent: 160 + 44 * textScale,
       ),
       itemCount: items.length,
       itemBuilder: (context, i) => _ItemTile(item: items[i]),
@@ -81,18 +87,24 @@ class _Grid extends StatelessWidget {
 }
 
 bool _isEquipped(Cosmetic item, GameSettings s) => switch (item.kind) {
-      CosmeticKind.cardBack => cardBackId(s.cardBack) == item.id,
-      CosmeticKind.felt => feltId(s.felt) == item.id,
-      CosmeticKind.celebration => celebrationId(s.celebration) == item.id,
-    };
+  CosmeticKind.cardBack => cardBackId(s.cardBack) == item.id,
+  CosmeticKind.felt => feltId(s.felt) == item.id,
+  CosmeticKind.celebration => celebrationId(s.celebration) == item.id,
+};
 
 GameSettings _equip(Cosmetic item, GameSettings s) => switch (item.kind) {
-      CosmeticKind.cardBack =>
-        s.copyWith(cardBack: CardBackStyle.values.firstWhere((v) => cardBackId(v) == item.id)),
-      CosmeticKind.felt => s.copyWith(felt: FeltStyle.values.firstWhere((v) => feltId(v) == item.id)),
-      CosmeticKind.celebration =>
-        s.copyWith(celebration: CelebrationStyle.values.firstWhere((v) => celebrationId(v) == item.id)),
-    };
+  CosmeticKind.cardBack => s.copyWith(
+    cardBack: CardBackStyle.values.firstWhere((v) => cardBackId(v) == item.id),
+  ),
+  CosmeticKind.felt => s.copyWith(
+    felt: FeltStyle.values.firstWhere((v) => feltId(v) == item.id),
+  ),
+  CosmeticKind.celebration => s.copyWith(
+    celebration: CelebrationStyle.values.firstWhere(
+      (v) => celebrationId(v) == item.id,
+    ),
+  ),
+};
 
 class _ItemTile extends StatelessWidget {
   const _ItemTile({required this.item});
@@ -110,12 +122,22 @@ class _ItemTile extends StatelessWidget {
     // Replace, don't queue: each tap should explain itself immediately.
     final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
     if (profile.level < item.minLevel) {
-      messenger.showSnackBar(SnackBar(content: Text('Reach level ${item.minLevel} to unlock ${item.name}')));
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Reach level ${item.minLevel} to unlock ${item.name}'),
+        ),
+      );
       return;
     }
     if (profile.profile.coins < item.price) {
       final short = item.price - profile.profile.coins;
-      messenger.showSnackBar(SnackBar(content: Text('You need $short more coins. Win matches to earn them!')));
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            'You need $short more coins. Win matches to earn them!',
+          ),
+        ),
+      );
       return;
     }
 
@@ -125,8 +147,14 @@ class _ItemTile extends StatelessWidget {
         title: Text('Unlock ${item.name}?'),
         content: Text('This costs ${item.price} coins.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Not now')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Unlock')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Not now'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Unlock'),
+          ),
         ],
       ),
     );
@@ -134,7 +162,9 @@ class _ItemTile extends StatelessWidget {
 
     if (profile.buy(item) == PurchaseResult.purchased) {
       await settings.update(_equip(item, settings.settings));
-      messenger.showSnackBar(SnackBar(content: Text('${item.name} unlocked and equipped!')));
+      messenger.showSnackBar(
+        SnackBar(content: Text('${item.name} unlocked and equipped!')),
+      );
     }
   }
 
@@ -149,10 +179,10 @@ class _ItemTile extends StatelessWidget {
     final status = equipped
         ? 'Equipped'
         : owned
-            ? 'Tap to equip'
-            : locked
-                ? 'Level ${item.minLevel}'
-                : '${item.price} coins';
+        ? 'Tap to equip'
+        : locked
+        ? 'Level ${item.minLevel}'
+        : '${item.price} coins';
 
     return Semantics(
       container: true,
@@ -168,7 +198,10 @@ class _ItemTile extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.9),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: equipped ? AppColors.coral : Colors.transparent, width: 3),
+            border: Border.all(
+              color: equipped ? AppColors.coral : Colors.transparent,
+              width: 3,
+            ),
             boxShadow: AppShadows.card,
           ),
           child: Column(
@@ -177,27 +210,53 @@ class _ItemTile extends StatelessWidget {
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    Opacity(opacity: locked ? 0.45 : 1, child: _Preview(item: item)),
-                    if (locked) const Icon(Icons.lock_rounded, size: 32, color: AppColors.ink),
+                    Opacity(
+                      opacity: locked ? 0.45 : 1,
+                      child: _Preview(item: item),
+                    ),
+                    if (locked)
+                      const Icon(
+                        Icons.lock_rounded,
+                        size: 32,
+                        color: AppColors.ink,
+                      ),
                   ],
                 ),
               ),
               const SizedBox(height: 8),
-              Text(item.name, style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.ink)),
+              Text(
+                item.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.ink,
+                ),
+              ),
               const SizedBox(height: 2),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (!owned && !locked) ...[
-                    const Icon(Icons.monetization_on_rounded, size: 14, color: AppColors.gold),
+                    const Icon(
+                      Icons.monetization_on_rounded,
+                      size: 14,
+                      color: AppColors.gold,
+                    ),
                     const SizedBox(width: 3),
                   ],
-                  Text(
-                    status,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: equipped ? AppColors.coralDeep : const Color(0xFF6B7280),
+                  Flexible(
+                    child: Text(
+                      status,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: equipped
+                            ? AppColors.coralDeep
+                            : const Color(0xFF6B7280),
+                      ),
                     ),
                   ),
                 ],
@@ -217,29 +276,33 @@ class _Preview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => switch (item.kind) {
-        CosmeticKind.cardBack => PlayingCardView(
-            card: const PlayingCard(suit: Suit.spades, rank: Rank.ace),
-            backStyle: CardBackStyle.values.firstWhere((v) => cardBackId(v) == item.id),
-            width: 70,
+    CosmeticKind.cardBack => PlayingCardView(
+      card: const PlayingCard(suit: Suit.spades, rank: Rank.ace),
+      backStyle: CardBackStyle.values.firstWhere(
+        (v) => cardBackId(v) == item.id,
+      ),
+      width: 70,
+    ),
+    CosmeticKind.felt => SizedBox(
+      width: 120,
+      height: 90,
+      child: FeltTable(
+        felt: FeltStyle.values.firstWhere((v) => feltId(v) == item.id),
+        padding: const EdgeInsets.all(12),
+        child: const Center(
+          child: PlayingCardView(
+            card: PlayingCard(suit: Suit.hearts, rank: Rank.ace, faceUp: true),
+            width: 34,
           ),
-        CosmeticKind.felt => SizedBox(
-            width: 120,
-            height: 90,
-            child: FeltTable(
-              felt: FeltStyle.values.firstWhere((v) => feltId(v) == item.id),
-              padding: const EdgeInsets.all(12),
-              child: const Center(
-                child: PlayingCardView(
-                  card: PlayingCard(suit: Suit.hearts, rank: Rank.ace, faceUp: true),
-                  width: 34,
-                ),
-              ),
-            ),
-          ),
-        CosmeticKind.celebration => _CelebrationPreview(
-            style: CelebrationStyle.values.firstWhere((v) => celebrationId(v) == item.id),
-          ),
-      };
+        ),
+      ),
+    ),
+    CosmeticKind.celebration => _CelebrationPreview(
+      style: CelebrationStyle.values.firstWhere(
+        (v) => celebrationId(v) == item.id,
+      ),
+    ),
+  };
 }
 
 // Loops the celebration so players can see what they're buying.
@@ -257,22 +320,26 @@ class _CelebrationPreviewState extends State<_CelebrationPreview> {
 
   @override
   Widget build(BuildContext context) => ClipRRect(
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          width: 120,
-          height: 100,
-          color: const Color(0xFF1F2937),
-          child: MediaQuery.disableAnimationsOf(context)
-              ? Icon(Icons.celebration_rounded, color: AppColors.gold.withValues(alpha: 0.9), size: 40)
-              : ConfettiBurst(
-                  key: ValueKey(_loop),
-                  count: 18,
-                  style: widget.style,
-                  duration: const Duration(milliseconds: 2400),
-                  onDone: () {
-                    if (mounted) setState(() => _loop++);
-                  },
-                ),
-        ),
-      );
+    borderRadius: BorderRadius.circular(14),
+    child: Container(
+      width: 120,
+      height: 100,
+      color: const Color(0xFF1F2937),
+      child: MediaQuery.disableAnimationsOf(context)
+          ? Icon(
+              Icons.celebration_rounded,
+              color: AppColors.gold.withValues(alpha: 0.9),
+              size: 40,
+            )
+          : ConfettiBurst(
+              key: ValueKey(_loop),
+              count: 18,
+              style: widget.style,
+              duration: const Duration(milliseconds: 2400),
+              onDone: () {
+                if (mounted) setState(() => _loop++);
+              },
+            ),
+    ),
+  );
 }

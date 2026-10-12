@@ -19,12 +19,16 @@ class GameController extends ChangeNotifier {
     this.difficulty = AIDifficulty.easy,
     int matchTarget = 5,
     List<String> opponentNames = const ['Computer'],
+    // Overrides opponentNames with an explicit table (pass-and-play).
+    List<Seat>? seats,
     Random? random,
     // A prepared starting position (the tutorial hand; tests).
     GameState? initialState,
   })  : _random = random,
         _state = initialState ??
-            createInitialGameState(matchTarget: matchTarget, opponentNames: opponentNames, random: random) {
+            (seats != null
+                ? createTableState(seats: seats, matchTarget: matchTarget, random: random)
+                : createInitialGameState(matchTarget: matchTarget, opponentNames: opponentNames, random: random)) {
     _scheduleEffects();
   }
 
@@ -59,8 +63,9 @@ class GameController extends ChangeNotifier {
   }
 
   // Two-tap: first tap selects a playable card, second tap on it plays it.
+  // Only cards in the hand of the human whose turn it is can be tapped.
   void tapCard(String cardId) {
-    final card = _state.players[0].hand.where((c) => c.id == cardId).firstOrNull;
+    final card = _state.currentPlayer.hand.where((c) => c.id == cardId).firstOrNull;
     if (card == null || !isPlayable(card)) return;
 
     dispatch(_state.selectedCardId == cardId ? PlayCard(cardId) : SelectCard(cardId));
@@ -70,7 +75,7 @@ class GameController extends ChangeNotifier {
     if (_state.selectedCardId != null) dispatch(const SelectCard(null));
   }
 
-  void nextRound() => dispatch(const RestartRound());
+  void nextRound({int starter = 0}) => dispatch(RestartRound(starter: starter));
 
   void rematch() => dispatch(StartGame(_state.matchTarget));
 

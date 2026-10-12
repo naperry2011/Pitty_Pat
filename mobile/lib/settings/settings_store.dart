@@ -9,6 +9,26 @@ import '../game/ai_player.dart';
 // Ownership lives in the player profile; main.dart drops anything equipped but not owned.
 const matchTargets = [3, 5, 10];
 const opponentCounts = [1, 2, 3];
+const passPlayerCounts = [2, 3, 4];
+const defaultPassNames = ['Player 1', 'Player 2', 'Player 3', 'Player 4'];
+const maxPassNameLength = 12;
+
+/// Seat names for a pass-and-play table: trimmed, capped, never blank, never repeated
+/// (the "pass to" screen must be unambiguous).
+List<String> resolvePassNames(List<String> raw, int count) {
+  final out = <String>[];
+  for (var i = 0; i < count; i++) {
+    var name = i < raw.length ? raw[i].trim() : '';
+    if (name.length > maxPassNameLength) name = name.substring(0, maxPassNameLength).trim();
+    if (name.isEmpty) name = defaultPassNames[i];
+    var unique = name;
+    for (var n = 2; out.contains(unique); n++) {
+      unique = '$name $n';
+    }
+    out.add(unique);
+  }
+  return out;
+}
 
 class GameSettings {
   const GameSettings({
@@ -21,6 +41,8 @@ class GameSettings {
     this.tutorialDone = false,
     this.opponents = 1,
     this.chatter = true,
+    this.passPlayers = 2,
+    this.passNames = defaultPassNames,
   });
 
   final AIDifficulty difficulty;
@@ -32,6 +54,8 @@ class GameSettings {
   final bool tutorialDone;
   final int opponents; // computer opponents at the table, 1-3
   final bool chatter; // opponents' speech bubbles
+  final int passPlayers; // pass-and-play table size, 2-4
+  final List<String> passNames; // remembered pass-and-play names, one per seat
 
   GameSettings copyWith({
     AIDifficulty? difficulty,
@@ -43,6 +67,8 @@ class GameSettings {
     bool? tutorialDone,
     int? opponents,
     bool? chatter,
+    int? passPlayers,
+    List<String>? passNames,
   }) =>
       GameSettings(
         difficulty: difficulty ?? this.difficulty,
@@ -54,6 +80,8 @@ class GameSettings {
         tutorialDone: tutorialDone ?? this.tutorialDone,
         opponents: opponents ?? this.opponents,
         chatter: chatter ?? this.chatter,
+        passPlayers: passPlayers ?? this.passPlayers,
+        passNames: passNames ?? this.passNames,
       );
 }
 
@@ -69,6 +97,8 @@ class SettingsStore extends ChangeNotifier {
   static const _kTutorialDone = 'tutorialDone';
   static const _kOpponents = 'opponents';
   static const _kChatter = 'chatter';
+  static const _kPassPlayers = 'passPlayers';
+  static const _kPassNames = 'passNames';
 
   final SharedPreferences _prefs;
   GameSettings _settings;
@@ -92,6 +122,8 @@ class SettingsStore extends ChangeNotifier {
       tutorialDone: prefs.getBool(_kTutorialDone) ?? d.tutorialDone,
       opponents: opponentCounts.contains(prefs.getInt(_kOpponents)) ? prefs.getInt(_kOpponents)! : d.opponents,
       chatter: prefs.getBool(_kChatter) ?? d.chatter,
+      passPlayers: passPlayerCounts.contains(prefs.getInt(_kPassPlayers)) ? prefs.getInt(_kPassPlayers)! : d.passPlayers,
+      passNames: _validNames(prefs.getStringList(_kPassNames)),
     );
   }
 
@@ -110,6 +142,8 @@ class SettingsStore extends ChangeNotifier {
         _prefs.setBool(_kTutorialDone, next.tutorialDone),
         _prefs.setInt(_kOpponents, next.opponents),
         _prefs.setBool(_kChatter, next.chatter),
+        _prefs.setInt(_kPassPlayers, next.passPlayers),
+        _prefs.setStringList(_kPassNames, next.passNames),
       ]);
     } catch (_) {}
   }
@@ -122,3 +156,6 @@ class SettingsScope extends InheritedNotifier<SettingsStore> {
   static SettingsStore of(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<SettingsScope>()!.notifier!;
 }
+
+List<String> _validNames(List<String>? stored) =>
+    stored != null && stored.length == defaultPassNames.length ? resolvePassNames(stored, stored.length) : defaultPassNames;

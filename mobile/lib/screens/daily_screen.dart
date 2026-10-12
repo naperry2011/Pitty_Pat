@@ -39,23 +39,33 @@ class DailyScreen extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.local_fire_department_rounded, color: AppColors.coral, size: 34),
-                        const SizedBox(width: 6),
-                        Text(
-                          '$streak day${streak == 1 ? '' : 's'}',
-                          style: TextStyle(
-                            fontFamily: displayFontFamily(context),
-                            fontSize: 30,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.ink,
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.local_fire_department_rounded,
+                            color: AppColors.coral,
+                            size: 34,
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 6),
+                          Text(
+                            '$streak day${streak == 1 ? '' : 's'}',
+                            style: TextStyle(
+                              fontFamily: displayFontFamily(context),
+                              fontSize: 30,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.ink,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    const Text('current streak', style: TextStyle(color: Color(0xFF6B7280))),
+                    const Text(
+                      'current streak',
+                      style: TextStyle(color: Color(0xFF6B7280)),
+                    ),
                     const SizedBox(height: 14),
                     const Text(
                       'One round against Sharp. Everyone gets the same deal today.',
@@ -65,22 +75,32 @@ class DailyScreen extends StatelessWidget {
                     Text(
                       'Win: +40 coins  ·  Finish: +15 coins  ·  Streak: +${dailyStreakBonus(streak + (done ? 0 : 1))}',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF6B7280),
+                      ),
                     ),
                     const SizedBox(height: 18),
                     if (done)
                       Text(
-                        wonToday ? 'You beat today\'s deal. Come back tomorrow!' : 'Done for today. Come back tomorrow!',
+                        wonToday
+                            ? 'You beat today\'s deal. Come back tomorrow!'
+                            : 'Done for today. Come back tomorrow!',
                         textAlign: TextAlign.center,
-                        style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.feltDeep),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.feltDeep,
+                        ),
                       )
                     else
                       PlayfulButton(
                         label: 'Play today\'s deal',
                         icon: Icons.play_arrow_rounded,
-                        onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
-                          builder: (_) => GameScreen.daily(date: today),
-                        )),
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => GameScreen.daily(date: today),
+                          ),
+                        ),
                       ),
                   ],
                 ),
@@ -121,7 +141,8 @@ class _MonthCalendar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final daysInMonth = DateTime(month.year, month.month + 1, 0).day;
-    final leading = DateTime(month.year, month.month, 1).weekday % 7; // Sunday-first grid
+    final leading =
+        DateTime(month.year, month.month, 1).weekday % 7; // Sunday-first grid
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -132,15 +153,23 @@ class _MonthCalendar extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Text('${_monthNames[month.month - 1]} ${month.year}',
-              style: const TextStyle(fontWeight: FontWeight.w800)),
+          Text(
+            '${_monthNames[month.month - 1]} ${month.year}',
+            style: const TextStyle(fontWeight: FontWeight.w800),
+          ),
           const SizedBox(height: 10),
           Row(
             children: [
               for (final d in ['S', 'M', 'T', 'W', 'T', 'F', 'S'])
                 Expanded(
                   child: Center(
-                    child: Text(d, style: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF))),
+                    child: Text(
+                      d,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF9CA3AF),
+                      ),
+                    ),
                   ),
                 ),
             ],
@@ -158,8 +187,12 @@ class _MonthCalendar extends StatelessWidget {
                 _DayCell(
                   date: DateTime(month.year, month.month, day),
                   isToday: day == today.day,
-                  done: completed.contains(dateKey(DateTime(month.year, month.month, day))),
-                  won: won.contains(dateKey(DateTime(month.year, month.month, day))),
+                  done: completed.contains(
+                    dateKey(DateTime(month.year, month.month, day)),
+                  ),
+                  won: won.contains(
+                    dateKey(DateTime(month.year, month.month, day)),
+                  ),
                 ),
             ],
           ),
@@ -170,7 +203,12 @@ class _MonthCalendar extends StatelessWidget {
 }
 
 class _DayCell extends StatelessWidget {
-  const _DayCell({required this.date, required this.isToday, required this.done, required this.won});
+  const _DayCell({
+    required this.date,
+    required this.isToday,
+    required this.done,
+    required this.won,
+  });
 
   final DateTime date;
   final bool isToday;
@@ -179,27 +217,28 @@ class _DayCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Semantics(
-        container: true,
-        label: '${date.day}${done ? (won ? ', won' : ', completed') : ''}${isToday ? ', today' : ''}',
-        excludeSemantics: true,
-        child: Container(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: won
-                ? AppColors.gold
-                : done
-                    ? AppColors.mint
-                    : Colors.transparent,
-            border: isToday ? Border.all(color: AppColors.coral, width: 2) : null,
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            '${date.day}',
-            style: TextStyle(
-              fontWeight: isToday || done ? FontWeight.w800 : FontWeight.w500,
-              color: done ? Colors.white : AppColors.ink,
-            ),
-          ),
+    container: true,
+    label:
+        '${date.day}${done ? (won ? ', won' : ', completed') : ''}${isToday ? ', today' : ''}',
+    excludeSemantics: true,
+    child: Container(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: won
+            ? AppColors.gold
+            : done
+            ? AppColors.mint
+            : Colors.transparent,
+        border: isToday ? Border.all(color: AppColors.coral, width: 2) : null,
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        '${date.day}',
+        style: TextStyle(
+          fontWeight: isToday || done ? FontWeight.w800 : FontWeight.w500,
+          color: done ? Colors.white : AppColors.ink,
         ),
-      );
+      ),
+    ),
+  );
 }
