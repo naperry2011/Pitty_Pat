@@ -50,6 +50,18 @@ describe('useGameState', () => {
     expect(next.matchTarget).toBe(3);
   });
 
+  test('PLAY_CARD is ignored while the turn is waiting to end', () => {
+    const initial = createInitialGameState('Player', 5);
+    const top = initial.discardPile[initial.discardPile.length - 1];
+    const match = { id: `${top.rank}-x`, rank: top.rank, suit: top.suit, faceUp: true };
+    const waiting = {
+      ...initial,
+      turnAction: 'waiting' as const,
+      players: initial.players.map((p, i) => (i === 0 ? { ...p, hand: [match, ...p.hand] } : p)),
+    };
+    expect(gameReducer(waiting, { type: 'PLAY_CARD', cardId: match.id })).toEqual(waiting);
+  });
+
   test('AI turns are decided by getAIDecision with the configured difficulty', () => {
     const { result } = renderHook(() => useGameState('hard'));
 

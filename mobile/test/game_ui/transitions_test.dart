@@ -1,0 +1,90 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:pitty_pat/audio/sound_effects.dart';
+import 'package:pitty_pat/game/game_engine.dart';
+import 'package:pitty_pat/game/game_reducer.dart';
+import 'package:pitty_pat/game/models.dart';
+import 'package:pitty_pat/game_ui/transitions.dart';
+
+import '../game/test_helpers.dart';
+
+GameState _withHands(List<PlayingCard> human, List<PlayingCard> ai,
+        {int current = 0, List<PlayingCard> deck = const [], List<PlayingCard>? discard, int wins = 0}) =>
+    makeState(
+      deck: deck,
+      discardPile: discard,
+      currentPlayerIndex: current,
+      matchTarget: 3,
+      players: [
+        Player(id: 'player1', name: 'Player', hand: human, isAI: false, wins: wins),
+        Player(id: 'ai1', name: 'Computer', hand: ai, isAI: true),
+      ],
+    );
+
+void main() {
+  test('human play slides from the human hand', () {
+    final prev = _withHands([card(Rank.five, Suit.spades), card(Rank.two, Suit.clubs)], [card(Rank.nine, Suit.clubs)]);
+    final t = StateTransition(prev, playCard(prev, '5-spades'));
+    expect(t.discardArrival?.source, DiscardSource.humanHand);
+    expect(t.discardArrival?.card.id, '5-spades');
+    expect(t.cues, [SoundCue.slide]);
+  });
+
+  test('AI play slides from the AI hand', () {
+    final prev = _withHands([card(Rank.two, Suit.clubs)], [card(Rank.five, Suit.spades), card(Rank.nine, Suit.clubs)], current: 1);
+    final t = StateTransition(prev, playCard(prev, '5-spades'));
+    expect(t.discardArrival?.source, DiscardSource.aiHand);
+    expect(t.cues, [SoundCue.slide]);
+  });
+
+  test('a draw flips in from the deck', () {
+    final prev = _withHands([card(Rank.two, Suit.clubs)], [card(Rank.nine, Suit.clubs)],
+        deck: [card(Rank.king, Suit.hearts, faceUp: false)]);
+    final t = StateTransition(prev, drawCard(prev));
+    expect(t.discardArrival?.source, DiscardSource.deck);
+    expect(t.cues, [SoundCue.flip]);
+  });
+
+  test('a reshuffle-then-draw still counts as a draw, not a new deal', () {
+    final prev = _withHands([card(Rank.two, Suit.clubs)], [card(Rank.nine, Suit.clubs)], discard: [
+      card(Rank.nine, Suit.hearts),
+      card(Rank.king, Suit.diamonds),
+      card(Rank.three, Suit.spades),
+    ]);
+    final t = StateTransition(prev, drawCard(prev));
+    expect(t.isNewDeal, isFalse);
+    expect(t.discardArrival?.source, DiscardSource.deck);
+    expect(t.cues, [SoundCue.flip]);
+  });
+
+  test('selection and end-turn changes produce no cues', () {
+    final prev = _withHands([card(Rank.five, Suit.spades)], [card(Rank.nine, Suit.clubs)]);
+    expect(StateTransition(prev, gameReducer(prev, const SelectCard('5-spades'))).cues, isEmpty);
+    final waiting = prev.copyWith(turnAction: TurnAction.waiting);
+    expect(StateTransition(waiting, endTurn(waiting)).cues, isEmpty);
+  });
+
+  test('human round win plays slide then the round-win flourish', () {
+    final prev = _withHands([card(Rank.five, Suit.spades)], [card(Rank.nine, Suit.clubs)]);
+    final t = StateTransition(prev, playCard(prev, '5-spades'));
+    expect(t.humanWon, isTrue);
+    expect(t.cues, [SoundCue.slide, SoundCue.roundWin]);
+  });
+
+  test('AI round win plays the softer match cue', () {
+    final prev = _withHands([card(Rank.two, Suit.clubs)], [card(Rank.five, Suit.spades)], current: 1);
+    expect(StateTransition(prev, playCard(prev, '5-spades')).cues, [SoundCue.slide, SoundCue.match]);
+  });
+
+  test('match win plays the fanfare', () {
+    final prev = _withHands([card(Rank.five, Suit.spades)], [card(Rank.nine, Suit.clubs)], wins: 2);
+    expect(StateTransition(prev, playCard(prev, '5-spades')).cues, [SoundCue.slide, SoundCue.matchWin]);
+  });
+
+  test('next round and rematch are new deals with a shuffle', () {
+    final ended = _withHands(const [], [card(Rank.nine, Suit.clubs)]).copyWith(phase: GamePhase.roundEnd);
+    final t = StateTransition(ended, gameReducer(ended, const RestartRound()));
+    expect(t.isNewDeal, isTrue);
+    expect(t.discardArrival, isNull);
+    expect(t.cues, [SoundCue.shuffle]);
+  });
+}

@@ -80,3 +80,28 @@ RootLayout (CardStyleProvider, Analytics)
 - Drawn card auto-plays if it matches, otherwise goes to discard
 - First to empty hand wins the round
 - Matches are first-to-N round wins (N = 3/5/10 from the setup screen); reaching N sets phase `gameEnd` (Rematch / Change settings)
+- `PLAY_CARD` is only accepted while `turnAction === 'draw'` (no second play during the end-turn delay)
+
+## Mobile App (`mobile/`, Flutter)
+
+Native Android + iOS client alongside the web app. Plan: `docs/plans/2026-10-11-flutter-mobile-app-design.md`. Android is tested first (dev machine is Windows); iOS waits for a Mac.
+
+```bash
+cd mobile
+flutter pub get
+flutter analyze                  # Lints (must be clean)
+flutter test                     # Unit + widget tests
+flutter run -d emulator-5554     # Run on the Android emulator (Medium_Phone_API_37.0)
+flutter build apk --debug        # Debug APK
+```
+
+- **Parity rule:** `mobile/lib/game/` is a 1:1 Dart port of `lib/game-engine.ts`, `lib/ai-player.ts` and the `useGameState` reducer. Any rule change lands in both, with tests on both sides.
+- **Turn sequencing** mirrors the web: `DrawCard`/`PlayCard` set `turnAction: waiting`; only `GameController._scheduleEffects` dispatches `EndTurn`.
+- **Randomness is injectable** (`Random` params) so deals, AI choices and seeded daily challenges are testable.
+- **Presentation-only layers:** `game_ui/transitions.dart` diffs consecutive states to pick sound cues and card flights; animations, sound and haptics never feed back into game state. All motion is skipped when `MediaQuery.disableAnimations` is set.
+- **State and DI:** built-in `ChangeNotifier` + `InheritedNotifier` (`SettingsScope`); no state-management package. Tests inject the theme (`PittyPatApp(theme:)`), the controller (`GameScreen(controller:)`) and sounds (`defaultSoundPlayer`).
+- **Card art** is `CustomPainter` on a 240x360 design canvas (same coordinates as the web SVGs). Suits are vector paths, not glyphs, because Android can render suit characters as emoji.
+- **Audio** uses a game audio context that mixes with other apps (no audio focus); `.ogg` assets work on Android only and must be converted (e.g. `afconvert`) before iOS.
+- **App-only features (not on the web):** first-run tutorial (`tutorialDone` setting), 2-4 player tables (`opponents` setting, table-size reward multiplier), named opponents with optional chatter (`chatter` setting). The shared rules are unchanged; drawing is allowed even when holding a match (owner decision, 2026-10-11).
+- **Layout review without a device:** `OUT_DIR=<dir> flutter test tool/render_screens.dart` renders key screens with the bundled fonts.
+- **Release setup:** application ID `com.pittypat.app` (permanent once uploaded). Fonts are bundled in `assets/google_fonts` with runtime fetching off (release builds have no INTERNET permission). Upload signing reads git-ignored `android/key.properties`. Icons/splash/store art are rendered by `tool/render_art.dart` (see `docs/release/`).

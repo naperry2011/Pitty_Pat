@@ -53,7 +53,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       };
 
     case 'PLAY_CARD':
-      if (state.phase !== 'playing') return state;
+      // turnAction gate: no second play during the end-turn delay
+      if (state.turnAction !== 'draw' || state.phase !== 'playing') return state;
       return {
         ...playCard(state, action.cardId),
         selectedCardId: null  // Clear selection after play

@@ -134,3 +134,60 @@ Primary Files:
 * tsconfig.json — strict mode, `@/` path alias
 * eslint.config.mjs
 * postcss.config.js
+
+## Mobile App (Flutter, Android + iOS)
+
+Category: Separate client in `mobile/` (Dart). Ports the web engine 1:1; rule changes land in both.
+
+Primary Files:
+
+* mobile/lib/game/models.dart - PlayingCard, Player, GameState (copyWith), enums; card ids match the web (`A-hearts`)
+* mobile/lib/game/game_engine.dart - port of lib/game-engine.ts (injectable `Random` for seeded deals)
+* mobile/lib/game/ai_player.dart - port of lib/ai-player.ts (getAIDecision, sealed AIPlay/AIDraw)
+* mobile/lib/game/game_reducer.dart - typed actions + pure reducer (port of gameReducer; PlayCard gated on turnAction)
+* mobile/lib/game/game_controller.dart - ChangeNotifier port of useGameState: single EndTurn source, AI move timer, two-tap
+* mobile/lib/game/timing.dart - endTurnDelay / aiThinkDelay / dealStagger (mirrors lib/timing.ts)
+
+UI:
+
+* mobile/lib/screens/ - home_screen, setup_screen, game_screen (board, round banner, match dialog), settings_sheet
+* mobile/lib/cards/ - card_face, card_back (CustomPainter ports of the SVGs), suit_shapes (vector suits), playing_card_view
+* mobile/lib/game_ui/ - table_pieces (hand/deck/discard), transitions (state diff -> sound + motion), flying_card, confetti
+* mobile/lib/theme/ - tokens (colors, shadows) and app_theme (Fredoka + Inter via google_fonts)
+* mobile/lib/widgets/ - felt_table, playful_button, playful_background, win_pips
+
+Supporting Files:
+
+* mobile/lib/settings/settings_store.dart - difficulty, matchTarget, soundMuted, cardBack via shared_preferences; SettingsScope
+* mobile/lib/audio/sound_effects.dart - audioplayers SFX pool (mixes with other audio) + HapticFeedback; `defaultSoundPlayer` test seam
+* mobile/assets/sounds/ - Kenney Casino Audio (CC0), copied from public/sounds
+
+External Integrations:
+
+* google_fonts (runtime fetch; bundle before release), shared_preferences, audioplayers
+
+Entry Points:
+
+* mobile/lib/main.dart - loads settings, locks portrait, PittyPatApp (theme injectable for tests)
+
+Tests:
+
+* mobile/test/ - engine/AI/controller parity tests, card art, settings, transitions, screen flows (fake_async, recording SoundPlayer)
+
+Progression and cosmetics (Phase 2, on-device):
+
+* mobile/lib/profile/player_profile.dart - PlayerProfile (coins, xp, per-difficulty stats, win streaks, owned cosmetics, daily days, achievements); validated JSON at prefs key `profile.v1`
+* mobile/lib/profile/profile_store.dart - pure applyRound / applyMatch / applyPurchase + ProfileStore (ChangeNotifier, injectable clock) + ProfileScope
+* mobile/lib/profile/progression.dart - level curve (xpForLevel 0/100/300/600...) and matchReward (difficulty x length; daily flat)
+* mobile/lib/profile/daily.dart - dateKey, dailySeed (yyyymmdd), current/best daily streak
+* mobile/lib/profile/achievements.dart - 10 local achievements with stable ids (map to Play Games / Game Center later)
+* mobile/lib/cosmetics/catalog.dart - card backs, FeltStyle, CelebrationStyle with price + minLevel; equipped items live in GameSettings, ownership in the profile (main.dart unequipUnowned)
+* mobile/lib/screens/ - locker_screen (buy/equip), daily_screen (streak + month calendar), stats_screen; GameScreen.daily = 1 round vs Sharp seeded by date, pays once per day
+
+Tutorial, tables and personalities:
+
+* mobile/lib/game/tutorial.dart - rigged first-run hand (tutorialGameState) + state-derived coaching (tutorialHint); GameScreen.tutorial never records stats
+* mobile/lib/game/game_engine.dart - createInitialGameState(opponentNames:) supports 1-3 computer opponents (2-4 players; the web stays 1v1); StartGame rematch keeps the table
+* mobile/lib/game/personalities.dart - 9-character roster (3 per difficulty), pickOpponents, pure reactionFor(transition) -> speech line; presentation only
+* mobile/lib/screens/game_screen.dart - opponent seat row (avatar, pips, overlapped hand), speech bubbles via CompositedTransformFollower above the felt, coach bubble in tutorial mode
+* mobile/tool/render_screens.dart - renders screens to PNG without a device (OUT_DIR=... flutter test tool/render_screens.dart); layout review + store screenshots
