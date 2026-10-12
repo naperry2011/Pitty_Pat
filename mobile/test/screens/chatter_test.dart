@@ -44,7 +44,7 @@ GameController _rosieAboutToPlay() => GameController(
       random: MaxRandom(),
       initialState: makeState(
         currentPlayerIndex: 1,
-        deck: [card(Rank.king, Suit.clubs, faceUp: false)],
+        deck: [card(Rank.king, Suit.clubs, faceUp: false), card(Rank.nine, Suit.hearts, faceUp: false)],
         players: [
           Player(id: 'player1', name: 'Player', hand: [card(Rank.two, Suit.spades)], isAI: false),
           Player(

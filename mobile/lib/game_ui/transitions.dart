@@ -1,4 +1,5 @@
 import '../audio/sound_effects.dart';
+import '../game/game_reducer.dart';
 import '../game/models.dart';
 
 // How a card reached the top of the discard pile in one state transition.
@@ -18,8 +19,11 @@ class StateTransition {
   final GameState prev;
   final GameState next;
 
-  // New round or rematch: the only ways back into play.
-  bool get isNewDeal => next.phase == GamePhase.playing && prev.phase != GamePhase.playing;
+  // New round, rematch, or a dead-round redeal (which stays in play).
+  bool get isNewDeal =>
+      next.phase == GamePhase.playing &&
+      (prev.phase != GamePhase.playing ||
+          (next.message == deadRoundMessage && prev.message != deadRoundMessage));
 
   // Every card is unique, so a changed top card means one arrived this transition.
   DiscardArrival? get discardArrival {

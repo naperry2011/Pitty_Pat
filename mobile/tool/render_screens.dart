@@ -24,9 +24,12 @@ import 'package:pitty_pat/profile/profile_store.dart';
 import 'package:pitty_pat/screens/daily_screen.dart';
 import 'package:pitty_pat/screens/game_screen.dart';
 import 'package:pitty_pat/screens/home_screen.dart';
+import 'package:pitty_pat/screens/ladder_screen.dart';
 import 'package:pitty_pat/screens/locker_screen.dart';
 import 'package:pitty_pat/screens/pass_play_setup_screen.dart';
+import 'package:pitty_pat/screens/stats_screen.dart';
 import 'package:pitty_pat/settings/settings_store.dart';
+import 'package:pitty_pat/theme/app_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final _today = DateTime(2026, 10, 11);
@@ -55,15 +58,8 @@ Future<void> _loadFonts() async {
   }
 }
 
-final _theme = ThemeData(
-  fontFamily: 'Inter',
-  textTheme: const TextTheme(
-    displayLarge: TextStyle(fontFamily: 'Fredoka'),
-    displaySmall: TextStyle(fontFamily: 'Fredoka'),
-    headlineSmall: TextStyle(fontFamily: 'Fredoka'),
-    titleLarge: TextStyle(fontFamily: 'Fredoka'),
-  ),
-);
+// The app's real theme, so renders match the device.
+final _theme = buildAppTheme();
 
 Future<void> _shot(
   WidgetTester tester,
@@ -298,6 +294,20 @@ void main() {
     );
     const pass = GameScreen.passAndPlay(playerNames: ['Mia', 'Jay', 'Sam', 'Dre'], matchTarget: 5);
     await _shot(tester, 'pass_setup', phone, const PassPlaySetupScreen(), prefs: {'passPlayers': 4});
+    final climbing = {
+      'profile.v1': _profile({
+        'ladder': 4,
+        'rivals': {
+          'Rosie': {'mp': 3, 'mw': 2},
+          'Pops': {'mp': 1, 'mw': 1},
+          'Lulu': {'mp': 2, 'mw': 1},
+          'Marcus': {'mp': 4, 'mw': 1},
+          'Auntie Bev': {'mp': 2, 'mw': 0},
+        },
+      }),
+    };
+    await _shot(tester, 'ladder', phone, const LadderScreen(), prefs: climbing);
+    await _shot(tester, 'stats', phone, const StatsScreen(), prefs: climbing);
     await _shot(tester, 'pass_cover', phone, pass);
     await _shot(tester, 'pass_board', phone, pass, tapText: "I'm Mia, show my cards");
   });

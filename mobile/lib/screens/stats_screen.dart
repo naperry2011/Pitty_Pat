@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../game/personalities.dart';
 import '../profile/achievements.dart';
 import '../profile/daily.dart';
+import '../profile/ladder.dart';
 import '../profile/profile_store.dart';
 import '../profile/progression.dart';
 import '../theme/app_theme.dart';
@@ -86,6 +88,40 @@ class StatsScreen extends StatelessWidget {
                               style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.coralDeep),
                             ),
                           ],
+                        );
+                      }),
+                      const SizedBox(height: 8),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              _Panel(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Head to head', style: TextStyle(fontWeight: FontWeight.w800)),
+                    const SizedBox(height: 10),
+                    for (final name in ladderOrder) ...[
+                      Builder(builder: (context) {
+                        final r = p.rivals[name];
+                        return Semantics(
+                          container: true,
+                          label: r == null || r.played == 0
+                              ? '$name, not played yet'
+                              : '$name, ${r.won} wins, ${r.lost} losses',
+                          excludeSemantics: true,
+                          child: Row(
+                            children: [
+                              CircleAvatar(radius: 6, backgroundColor: personalityByName(name).color),
+                              const SizedBox(width: 8),
+                              Expanded(child: Text(name, style: const TextStyle(fontWeight: FontWeight.w700))),
+                              Text(
+                                r == null || r.played == 0 ? '-' : '${r.won}-${r.lost}',
+                                style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.coralDeep),
+                              ),
+                            ],
+                          ),
                         );
                       }),
                       const SizedBox(height: 8),

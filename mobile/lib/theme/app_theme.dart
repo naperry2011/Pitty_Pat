@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'tokens.dart';
 
@@ -18,21 +17,24 @@ ThemeData buildAppTheme() {
     scaffoldBackgroundColor: AppColors.cream,
   );
 
-  final body = GoogleFonts.interTextTheme(base.textTheme).apply(
+  // Families are declared with every weight in pubspec.yaml, so a fontWeight
+  // set later (e.g. w800) picks the matching file instead of faking bold.
+  final body = base.textTheme.apply(
+    fontFamily: 'Inter',
     bodyColor: AppColors.ink,
     displayColor: AppColors.ink,
   );
-  final display = GoogleFonts.fredokaTextTheme(body);
+  TextStyle? display(TextStyle? s) => s?.copyWith(fontFamily: 'Fredoka');
 
   return base.copyWith(
     textTheme: body.copyWith(
-      displayLarge: display.displayLarge,
-      displayMedium: display.displayMedium,
-      displaySmall: display.displaySmall,
-      headlineLarge: display.headlineLarge,
-      headlineMedium: display.headlineMedium,
-      headlineSmall: display.headlineSmall,
-      titleLarge: display.titleLarge,
+      displayLarge: display(body.displayLarge),
+      displayMedium: display(body.displayMedium),
+      displaySmall: display(body.displaySmall),
+      headlineLarge: display(body.headlineLarge),
+      headlineMedium: display(body.headlineMedium),
+      headlineSmall: display(body.headlineSmall),
+      titleLarge: display(body.titleLarge),
     ),
   );
 }

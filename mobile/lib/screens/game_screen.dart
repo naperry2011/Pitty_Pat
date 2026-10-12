@@ -16,6 +16,7 @@ import '../game_ui/flying_card.dart';
 import '../game_ui/table_pieces.dart';
 import '../game_ui/transitions.dart';
 import '../profile/daily.dart';
+import '../profile/ladder.dart';
 import '../profile/profile_store.dart';
 import '../profile/progression.dart';
 import '../settings/settings_store.dart';
@@ -41,6 +42,22 @@ class GameScreen extends StatefulWidget {
     @visibleForTesting this.sounds,
     @visibleForTesting this.chatRandom,
   }) : isTutorial = false,
+       playerNames = null,
+       ladderRung = null;
+
+  // Ladder: 1v1, first to 3, against the opponent on rung [rung].
+  GameScreen.ladder({
+    super.key,
+    required int rung,
+    this.controller,
+    this.sounds,
+    this.chatRandom,
+  }) : ladderRung = rung,
+       difficulty = personalityByName(ladderOrder[rung]).difficulty,
+       matchTarget = ladderMatchTarget,
+       opponents = 1,
+       dailyDate = null,
+       isTutorial = false,
        playerNames = null;
 
   // Daily challenge: one round against Sharp, dealt from the date's seed so
@@ -56,7 +73,8 @@ class GameScreen extends StatefulWidget {
        matchTarget = 1,
        opponents = 1,
        isTutorial = false,
-       playerNames = null;
+       playerNames = null,
+       ladderRung = null;
 
   // First-run tutorial: a scripted hand with coaching; never recorded.
   const GameScreen.tutorial({
@@ -69,7 +87,8 @@ class GameScreen extends StatefulWidget {
        matchTarget = 1,
        opponents = 1,
        isTutorial = true,
-       playerNames = null;
+       playerNames = null,
+       ladderRung = null;
 
   // Pass-and-play: 2-4 people share one phone. Hands are hidden behind a
   // "pass to" screen between turns, and nothing touches the player profile.
@@ -83,7 +102,8 @@ class GameScreen extends StatefulWidget {
        difficulty = AIDifficulty.easy,
        opponents = 0,
        isTutorial = false,
-       chatRandom = null;
+       chatRandom = null,
+       ladderRung = null;
 
   final AIDifficulty difficulty;
   final int matchTarget;
@@ -94,9 +114,11 @@ class GameScreen extends StatefulWidget {
   final GameController? controller;
   final SoundPlayer? sounds;
   final math.Random? chatRandom; // chatter dice, injectable for tests
+  final int? ladderRung; // set only for ladder matches
 
   bool get isDaily => dailyDate != null;
   bool get isPassAndPlay => playerNames != null;
+  bool get isLadder => ladderRung != null;
 
   @override
   State<GameScreen> createState() => _GameScreenState();
@@ -109,6 +131,8 @@ class _GameScreenState extends State<GameScreen> {
       ? const []
       : widget.isTutorial
       ? [personalityByName('Rosie')]
+      : widget.isLadder
+      ? [personalityByName(ladderOrder[widget.ladderRung!])]
       : pickOpponents(
           widget.difficulty,
           widget.opponents,
@@ -123,6 +147,7 @@ class _GameScreenState extends State<GameScreen> {
         difficulty: widget.difficulty,
         matchTarget: widget.matchTarget,
         opponentNames: [for (final p in _cast) p.name],
+        styles: {for (final p in _cast) p.name: p.style},
         seats: widget.isPassAndPlay
             ? [for (final name in widget.playerNames!) (name: name, isAI: false)]
             : null,
@@ -283,6 +308,8 @@ class _GameScreenState extends State<GameScreen> {
         roundsLost: opponents.fold(0, (a, p) => a + p.wins),
         isDaily: widget.isDaily,
         opponents: opponents.length,
+        opponentNames: [for (final p in opponents) p.name],
+        ladderRung: widget.ladderRung,
       ),
     );
     setState(() => _summary = summary);
@@ -323,11 +350,14 @@ class _GameScreenState extends State<GameScreen> {
     return box.localToGlobal(Offset.zero, ancestor: stack) & box.size;
   }
 
-  void _changeSettings() => Navigator.of(context).pushReplacement(
-    MaterialPageRoute<void>(
-      builder: (_) => widget.isPassAndPlay ? const PassPlaySetupScreen() : const SetupScreen(),
-    ),
-  );
+  // Ladder matches are opened from the ladder, so going back is a pop.
+  void _changeSettings() => widget.isLadder
+      ? Navigator.of(context).pop()
+      : Navigator.of(context).pushReplacement(
+          MaterialPageRoute<void>(
+            builder: (_) => widget.isPassAndPlay ? const PassPlaySetupScreen() : const SetupScreen(),
+          ),
+        );
 
   // Pass-and-play rotates the first move to the player after the round's winner,
   // so the same person doesn't always start. Solo games keep the web rule (you start).
@@ -598,6 +628,7 @@ class _GameScreenState extends State<GameScreen> {
                       onTutorialDone: _finishTutorial,
                       onRematch: _game.rematch,
                       onChangeSettings: _changeSettings,
+                      changeLabel: widget.isLadder ? 'Back to ladder' : 'Change settings',
                       onDone: () =>
                           Navigator.of(context).popUntil((r) => r.isFirst),
                     ),
@@ -727,7 +758,7 @@ class _OpponentSeat extends StatelessWidget {
         Semantics(
           container: true,
           label:
-              '${player.name}, ${player.hand.length} cards${active ? ', thinking' : ''}',
+              '${player.name}, ${player.hand.length} cards${active ? ', thinking' : ''}${persona == null ? '' : '. ${persona!.tagline}'}',
           excludeSemantics: true,
           // Name above pips: a first-to-10 row of pips wraps instead of overflowing.
           child: Column(
@@ -756,6 +787,19 @@ class _OpponentSeat extends StatelessWidget {
                   ),
                 ],
               ),
+              if (persona != null)
+                Text(
+                  persona!.tagline,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w600,
+                    fontStyle: FontStyle.italic,
+                    color: Color(0xFF6B7280),
+                  ),
+                ),
               const SizedBox(height: 3),
               WinPips(
                 wins: player.wins,
@@ -1165,6 +1209,7 @@ class _MatchOverDialog extends StatelessWidget {
     required this.onRematch,
     required this.onChangeSettings,
     required this.onDone,
+    this.changeLabel = 'Change settings',
   });
 
   final bool humanWon;
@@ -1179,6 +1224,7 @@ class _MatchOverDialog extends StatelessWidget {
   final VoidCallback onRematch;
   final VoidCallback onChangeSettings;
   final VoidCallback onDone;
+  final String changeLabel;
 
   String get _title => isTutorial
       ? (humanWon ? "You're ready to play!" : "Nice try! You're ready.")
@@ -1289,7 +1335,7 @@ class _MatchOverDialog extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       PlayfulButton(
-                        label: 'Change settings',
+                        label: changeLabel,
                         primary: false,
                         fontSize: 16,
                         onPressed: onChangeSettings,
@@ -1343,6 +1389,13 @@ class _RewardsPanel extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               'Includes +${s.streakBonus} daily streak bonus',
+              style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+            ),
+          ],
+          if (s.ladderBonus > 0) ...[
+            const SizedBox(height: 6),
+            Text(
+              'Includes +${s.ladderBonus} ladder bonus',
               style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
             ),
           ],

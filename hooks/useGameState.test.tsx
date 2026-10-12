@@ -1,6 +1,7 @@
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useGameState, gameReducer } from './useGameState';
+import { useGameState, gameReducer, DEAD_ROUND_MESSAGE } from './useGameState';
+import { GameState } from '@/types';
 import { createInitialGameState } from '@/lib/game-engine';
 import * as aiPlayer from '@/lib/ai-player';
 
@@ -113,5 +114,32 @@ describe('useGameState', () => {
 
     // Exactly one draw each: 41 - 2 = 39 cards left in the stock.
     expect(result.current.gameState.deck).toHaveLength(39);
+  });
+});
+
+describe('dead rounds', () => {
+  test('END_TURN redeals with no score when no one can ever match', () => {
+    const base = createInitialGameState('Player', 5);
+    const dead: GameState = {
+      ...base,
+      deck: [{ id: 'Q-clubs', rank: 'Q', suit: 'clubs', faceUp: false }],
+      discardPile: [{ id: '5-hearts', rank: '5', suit: 'hearts', faceUp: true }],
+      players: [
+        { ...base.players[0], hand: [{ id: 'K-spades', rank: 'K', suit: 'spades', faceUp: true }], wins: 1 },
+        { ...base.players[1], hand: [{ id: 'K-hearts', rank: 'K', suit: 'hearts', faceUp: true }], wins: 2 },
+      ],
+      currentPlayerIndex: 1,
+      turnAction: 'waiting',
+    };
+
+    const next = gameReducer(dead, { type: 'END_TURN' });
+    expect(next.message).toBe(DEAD_ROUND_MESSAGE);
+    expect(next.phase).toBe('playing');
+    expect(next.winner).toBeNull();
+    expect(next.currentPlayerIndex).toBe(0);
+    expect(next.turnAction).toBe('draw');
+    expect(next.players.map(p => p.hand.length)).toEqual([5, 5]);
+    expect(next.players.map(p => p.wins)).toEqual([1, 2]);
+    expect(next.deck.length + next.discardPile.length).toBe(42);
   });
 });

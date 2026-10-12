@@ -1,4 +1,4 @@
-import { GameState, Card } from '@/types';
+import { GameState } from '@/types';
 import { findPlayableCards, drawCard, playCard, endTurn } from './game-engine';
 
 // AI difficulty levels
@@ -8,6 +8,16 @@ interface AIDecision {
   action: 'play' | 'draw';
   cardId?: string;
 }
+
+// Playing a match is always the best move: it sheds a card, while drawing never
+// does. Every playable card shares the top discard's rank, so which one is played
+// doesn't matter either. Difficulty is therefore how often the AI overlooks a
+// match it holds (it draws instead).
+export const MISS_CHANCE: Record<AIDifficulty, number> = {
+  easy: 0.35,
+  medium: 0.12,
+  hard: 0,
+};
 
 // Get AI decision based on current game state
 export function getAIDecision(state: GameState, difficulty: AIDifficulty = 'easy'): AIDecision {
@@ -20,62 +30,16 @@ export function getAIDecision(state: GameState, difficulty: AIDifficulty = 'easy
   const topDiscard = state.discardPile[state.discardPile.length - 1];
   const playableCards = findPlayableCards(currentPlayer.hand, topDiscard);
 
-  if (playableCards.length > 0) {
-    // AI has matching cards
-    let cardToPlay: Card;
-
-    switch (difficulty) {
-      case 'easy':
-        // Easy AI: Always plays the first matching card
-        cardToPlay = playableCards[0];
-        break;
-
-      case 'medium':
-        // Medium AI: Randomly chooses from matching cards
-        cardToPlay = playableCards[Math.floor(Math.random() * playableCards.length)];
-        break;
-
-      case 'hard':
-        // Hard AI: Strategic play (save certain cards, play others first)
-        // For Pitty Pat, strategy is limited, so we'll play randomly but with slight preference
-        // In a more complex version, could track opponent's cards
-        cardToPlay = selectStrategicCard(playableCards, currentPlayer.hand);
-        break;
-
-      default:
-        cardToPlay = playableCards[0];
-    }
-
-    return {
-      action: 'play',
-      cardId: cardToPlay.id
-    };
+  if (playableCards.length === 0) {
+    return { action: 'draw' };
   }
 
-  // No matching cards, must draw
-  return {
-    action: 'draw'
-  };
-}
-
-// Strategic card selection for hard AI
-function selectStrategicCard(playableCards: Card[], hand: Card[]): Card {
-  // Simple strategy: If we have multiple of the same rank, keep one for flexibility
-  const rankCounts = new Map<string, number>();
-
-  hand.forEach(card => {
-    rankCounts.set(card.rank, (rankCounts.get(card.rank) || 0) + 1);
-  });
-
-  // Prefer to play cards we have duplicates of
-  for (const card of playableCards) {
-    if ((rankCounts.get(card.rank) || 0) > 1) {
-      return card;
-    }
+  const missChance = MISS_CHANCE[difficulty];
+  if (missChance > 0 && Math.random() < missChance) {
+    return { action: 'draw' };
   }
 
-  // Otherwise, play random
-  return playableCards[Math.floor(Math.random() * playableCards.length)];
+  return { action: 'play', cardId: playableCards[0].id };
 }
 
 // Execute AI turn with delay for realism

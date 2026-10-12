@@ -5,6 +5,7 @@ import 'package:pitty_pat/game/ai_player.dart';
 import 'package:pitty_pat/profile/profile_store.dart';
 import 'package:pitty_pat/screens/daily_screen.dart';
 import 'package:pitty_pat/screens/game_screen.dart';
+import 'package:pitty_pat/screens/ladder_screen.dart';
 import 'package:pitty_pat/screens/home_screen.dart';
 import 'package:pitty_pat/screens/locker_screen.dart';
 import 'package:pitty_pat/screens/pass_play_setup_screen.dart';
@@ -25,6 +26,8 @@ final _screens = <String, Widget Function()>{
   'settings': () => const Scaffold(body: SettingsSheet()),
   'game 1v1': () => const GameScreen(difficulty: AIDifficulty.easy, matchTarget: 10),
   'game 4p': () => const GameScreen(difficulty: AIDifficulty.hard, matchTarget: 10, opponents: 3),
+  'ladder': () => const LadderScreen(),
+  'game ladder': () => GameScreen.ladder(rung: 4),
   'tutorial': () => const GameScreen.tutorial(),
   'pass setup': () => const PassPlaySetupScreen(),
   'pass cover 4p': () => const GameScreen.passAndPlay(

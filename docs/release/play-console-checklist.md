@@ -35,7 +35,7 @@ Facts marked *(verified)* were checked against Google's live documentation on 20
 - [x] **Claude:** Gradle `signingConfigs.release` reads `android/key.properties` (git-ignored); falls back to the debug key until it exists.
 - [ ] **You:** create the upload keystore and `key.properties` (commands in "Create the upload key" below).
 - [x] **Claude:** `applicationId` `com.pittypat.app`, label "Pitty Pat", version `1.0.0+1`.
-- [x] **Claude:** Fredoka + Inter bundled in `assets/google_fonts` (SHA-256 verified against google_fonts), runtime fetching off, OFL licenses registered.
+- [x] **Claude:** Fredoka + Inter bundled in `assets/google_fonts` (SHA-256 verified against google_fonts when downloaded) and declared as weighted families in `pubspec.yaml`; the google_fonts package was removed 2026-10-11, so nothing fetches at runtime. OFL licenses registered.
 - [x] **Claude:** adaptive app icon + splash generated from the card art (`tool/render_art.dart`).
 - [ ] **Claude:** build the bundle: `flutter build appbundle --release`. Target SDK is already 36, which meets Play's requirement for new apps from Aug 31, 2026 *(verified)*.
 
@@ -65,7 +65,7 @@ Order matters. Steps follow Google's setup guide *(verified)*.
   - Google recommends **two credentials** (release + debug), same package name *(verified)*. A wrong SHA-1 or package name breaks sign-in.
 - [ ] **Copy the Application ID** (the "Project ID" digits under the game name) and send it to Claude.
 - [ ] **Testers tab:** add your own Google account (the SDK won't work for you otherwise) and testers' emails; access can take a couple of hours *(verified)*. Or add the internal/closed **release tracks** so all track testers get access.
-- [ ] **Achievements:** create the 10 below. Google's quality checklist requires **at least 10 visible (revealed) achievements**, so set all of them to *Revealed* *(verified)*. Each needs a name, description, icon, and points; points total is capped at 1000 *(verified)*. Claude can generate the 10 icons.
+- [ ] **Achievements:** create the 10 below. (2026-10-11: the app now has 15; the extra ones are `table_boss`, `ladder_chill`, `ladder_clever`, `ladder_top`, `rivals_all` in `mobile/lib/profile/achievements.dart`. Pick which to publish, keeping the 1000-point cap in mind.) Google's quality checklist requires **at least 10 visible (revealed) achievements**, so set all of them to *Revealed* *(verified)*. Each needs a name, description, icon, and points; points total is capped at 1000 *(verified)*. Claude can generate the 10 icons.
 
   | Code id | Name | Description | Coins in app |
   |---|---|---|---|

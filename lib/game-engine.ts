@@ -67,6 +67,15 @@ export function findPlayableCards(hand: Card[], topDiscard: Card): Card[] {
   return hand.filter(card => canPlayCard(card, topDiscard));
 }
 
+// True when no one can ever play again: every rank still held has no copy left
+// in the deck or discard pile, so it can never reach the top (e.g. four players
+// each holding one King).
+export function isDeadRound(state: GameState): boolean {
+  const heldRanks = new Set(state.players.flatMap(p => p.hand.map(c => c.rank)));
+  if (heldRanks.size === 0) return false;
+  return ![...state.deck, ...state.discardPile].some(c => heldRanks.has(c.rank));
+}
+
 // Draw a card from the deck
 export function drawCard(state: GameState): GameState {
   let deck = state.deck;

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { useGameState } from '@/hooks/useGameState';
+import { useGameState, DEAD_ROUND_MESSAGE } from '@/hooks/useGameState';
 import Hand from './Hand';
 import Deck from './Deck';
 import DiscardPile from './DiscardPile';
@@ -135,6 +135,14 @@ export default function GameBoard({ settings, onChangeSettings }: GameBoardProps
     prevDiscardLenRef.current = gameState.discardPile.length;
     prevDeckLenRef.current = gameState.deck.length;
   }, [gameState.discardPile.length, gameState.deck.length]);
+
+  // A dead-round redeal stays in 'playing', so the phase watcher above misses it
+  useEffect(() => {
+    if (gameState.message !== DEAD_ROUND_MESSAGE) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setDealRound(n => n + 1);
+    playSound('shuffle');
+  }, [gameState.message]);
 
   // Move focus into the match-over dialog when it mounts
   useEffect(() => {

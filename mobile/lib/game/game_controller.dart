@@ -7,6 +7,7 @@ import 'ai_player.dart';
 import 'game_engine.dart';
 import 'game_reducer.dart';
 import 'models.dart';
+import 'play_style.dart';
 import 'timing.dart';
 
 enum _PendingEffect { endTurn, aiMove }
@@ -19,6 +20,8 @@ class GameController extends ChangeNotifier {
     this.difficulty = AIDifficulty.easy,
     int matchTarget = 5,
     List<String> opponentNames = const ['Computer'],
+    // Opponent name -> play style; unlisted AI seats play by [difficulty].
+    this.styles = const {},
     // Overrides opponentNames with an explicit table (pass-and-play).
     List<Seat>? seats,
     Random? random,
@@ -33,6 +36,7 @@ class GameController extends ChangeNotifier {
   }
 
   final AIDifficulty difficulty;
+  final Map<String, PlayStyle> styles;
   final Random? _random;
 
   GameState _state;
@@ -107,9 +111,15 @@ class GameController extends ChangeNotifier {
           dispatch(const EndTurn());
         });
       case _PendingEffect.aiMove:
-        _timer = Timer(GameTiming.aiThinkDelay, () {
+        final style = styles[s.currentPlayer.name];
+        _timer = Timer(style?.thinkDelay ?? GameTiming.aiThinkDelay, () {
           _pending = null;
-          final decision = getAIDecision(_state, difficulty, _random);
+          final decision = getAIDecision(
+            _state,
+            difficulty,
+            _random,
+            style?.missChanceFor(_state, _state.currentPlayer),
+          );
           dispatch(switch (decision) {
             AIPlay(:final cardId) => PlayCard(cardId),
             AIDraw() => const DrawCard(),

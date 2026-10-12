@@ -29,6 +29,8 @@ class MatchOutcome {
     required this.roundsLost,
     this.isDaily = false,
     this.opponents = 1,
+    this.opponentNames = const [],
+    this.ladderRung,
   });
 
   final AIDifficulty difficulty;
@@ -38,6 +40,8 @@ class MatchOutcome {
   final int roundsLost;
   final bool isDaily;
   final int opponents; // computer opponents at the table
+  final List<String> opponentNames; // for head-to-head records
+  final int? ladderRung; // set when this was a ladder match
 }
 
 class Reward {

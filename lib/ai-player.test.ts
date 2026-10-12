@@ -1,5 +1,5 @@
 import { describe, test, expect, afterEach, vi } from 'vitest';
-import { getAIDecision } from './ai-player';
+import { getAIDecision, MISS_CHANCE } from './ai-player';
 import { Card, GameState, Rank, Suit } from '@/types';
 
 function card(rank: Rank, suit: Suit): Card {
@@ -34,34 +34,37 @@ describe('getAIDecision', () => {
     expect(getAIDecision(state, 'easy')).toEqual({ action: 'draw' });
   });
 
-  test('easy difficulty plays the first matching card', () => {
-    vi.spyOn(Math, 'random').mockReturnValue(0.99);
-    const state = aiTurnState(
+  const matchState = () =>
+    aiTurnState(
       [card('5', 'clubs'), card('5', 'diamonds'), card('9', 'hearts')],
       card('5', 'spades')
     );
-    const decision = getAIDecision(state, 'easy');
-    expect(decision).toEqual({ action: 'play', cardId: '5-clubs' });
-  });
 
-  test('medium difficulty plays a random matching card', () => {
+  test('plays a matching card when the miss roll fails', () => {
     vi.spyOn(Math, 'random').mockReturnValue(0.99);
-    const state = aiTurnState(
-      [card('5', 'clubs'), card('5', 'diamonds'), card('9', 'hearts')],
-      card('5', 'spades')
-    );
-    const decision = getAIDecision(state, 'medium');
-    expect(decision).toEqual({ action: 'play', cardId: '5-diamonds' });
+    for (const d of ['easy', 'medium', 'hard'] as const) {
+      expect(getAIDecision(matchState(), d)).toEqual({ action: 'play', cardId: '5-clubs' });
+    }
   });
 
-  test('hard difficulty prefers playing from a duplicated rank', () => {
-    const state = aiTurnState(
-      [card('5', 'clubs'), card('9', 'diamonds'), card('9', 'hearts')],
-      card('9', 'spades')
-    );
-    const decision = getAIDecision(state, 'hard');
-    expect(decision.action).toBe('play');
-    expect(['9-diamonds', '9-hearts']).toContain(decision.cardId);
+  test('easy and medium sometimes overlook a match and draw', () => {
+    const random = vi.spyOn(Math, 'random');
+    random.mockReturnValue(0.3);
+    expect(getAIDecision(matchState(), 'easy')).toEqual({ action: 'draw' });
+    random.mockReturnValue(0.1);
+    expect(getAIDecision(matchState(), 'medium')).toEqual({ action: 'draw' });
+    random.mockReturnValue(0.2);
+    expect(getAIDecision(matchState(), 'medium')).toEqual({ action: 'play', cardId: '5-clubs' });
+  });
+
+  test('hard never misses a match', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+    expect(getAIDecision(matchState(), 'hard')).toEqual({ action: 'play', cardId: '5-clubs' });
+  });
+
+  test('miss rates rank the difficulties', () => {
+    expect(MISS_CHANCE.easy).toBeGreaterThan(MISS_CHANCE.medium);
+    expect(MISS_CHANCE.medium).toBeGreaterThan(MISS_CHANCE.hard);
   });
 
   test('throws if the current player is not an AI', () => {

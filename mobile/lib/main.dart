@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'cosmetics/catalog.dart';
@@ -12,12 +11,11 @@ import 'theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Fonts ship in assets/google_fonts (release builds have no INTERNET permission).
-  GoogleFonts.config.allowRuntimeFetching = false;
+  // Fonts are bundled (pubspec.yaml `fonts:`); release builds have no INTERNET permission.
   LicenseRegistry.addLicense(() async* {
     for (final family in ['Fredoka', 'Inter']) {
       yield LicenseEntryWithLineBreaks(
-        ['google_fonts'],
+        [family],
         await rootBundle.loadString('assets/google_fonts/OFL-$family.txt'),
       );
     }

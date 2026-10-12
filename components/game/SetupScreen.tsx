@@ -11,9 +11,9 @@ interface SetupScreenProps {
 }
 
 const DIFFICULTY_OPTIONS: { value: AIDifficulty; label: string; description: string }[] = [
-  { value: 'easy', label: 'Chill', description: 'Relaxed opponent' },
-  { value: 'medium', label: 'Clever', description: 'Thinks it through' },
-  { value: 'hard', label: 'Sharp', description: 'Plays to win' }
+  { value: 'easy', label: 'Chill', description: 'Misses plays' },
+  { value: 'medium', label: 'Clever', description: 'Rarely slips' },
+  { value: 'hard', label: 'Sharp', description: 'Never misses' }
 ];
 
 const TARGET_OPTIONS: GameSettings['matchTarget'][] = [3, 5, 10];

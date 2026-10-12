@@ -213,4 +213,30 @@ void main() {
       expect(a.discardPile, b.discardPile);
     });
   });
+
+  group('isDeadRound', () {
+    GameState kingsInHands({List<PlayingCard>? deck, List<PlayingCard>? discard}) => makeState(
+          deck: deck ?? [card(Rank.queen, Suit.clubs, faceUp: false)],
+          discardPile: discard ?? [card(Rank.five, Suit.hearts)],
+          players: [
+            Player(id: 'player1', name: 'Player', hand: [card(Rank.king, Suit.spades)], isAI: false),
+            Player(id: 'ai1', name: 'Computer', hand: [card(Rank.king, Suit.hearts)], isAI: true),
+          ],
+        );
+
+    test('is dead when no copy of a held rank is left outside the hands', () {
+      expect(isDeadRound(kingsInHands()), isTrue);
+    });
+
+    test('is live while a held rank is still in the deck', () {
+      expect(isDeadRound(kingsInHands(deck: [card(Rank.king, Suit.clubs, faceUp: false)])), isFalse);
+    });
+
+    test('a copy buried in the discard pile still counts (it can be reshuffled)', () {
+      expect(
+        isDeadRound(kingsInHands(discard: [card(Rank.king, Suit.clubs), card(Rank.five, Suit.hearts)])),
+        isFalse,
+      );
+    });
+  });
 }

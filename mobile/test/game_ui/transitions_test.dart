@@ -113,4 +113,15 @@ void main() {
     expect(t.discardArrival, isNull);
     expect(t.cues, [SoundCue.shuffle]);
   });
+
+  test('a dead-round redeal counts as a new deal', () {
+    final prev = _withHands([card(Rank.king, Suit.spades)], [card(Rank.king, Suit.hearts)],
+        current: 1, deck: [card(Rank.queen, Suit.clubs, faceUp: false)]);
+    final next = gameReducer(prev.copyWith(turnAction: TurnAction.waiting), const EndTurn());
+    expect(next.message, deadRoundMessage);
+    final t = StateTransition(prev, next);
+    expect(t.isNewDeal, isTrue);
+    expect(t.discardArrival, isNull);
+    expect(t.cues, [SoundCue.shuffle]);
+  });
 }

@@ -10,9 +10,9 @@ import 'game_screen.dart';
 
 // Port of components/game/SetupScreen.tsx.
 const difficultyOptions = [
-  (AIDifficulty.easy, 'Chill', 'Relaxed opponent'),
-  (AIDifficulty.medium, 'Clever', 'Thinks it through'),
-  (AIDifficulty.hard, 'Sharp', 'Plays to win'),
+  (AIDifficulty.easy, 'Chill', 'Misses plays'),
+  (AIDifficulty.medium, 'Clever', 'Rarely slips'),
+  (AIDifficulty.hard, 'Sharp', 'Never misses'),
 ];
 
 class SetupScreen extends StatefulWidget {
@@ -148,13 +148,18 @@ class _Group extends StatelessWidget {
           children: [
             Text(title, style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.ink)),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                for (var i = 0; i < children.length; i++) ...[
-                  if (i > 0) const SizedBox(width: 8),
-                  Expanded(child: children[i]),
+            // Equal heights: a description that wraps on a narrow phone
+            // grows its whole row instead of one tile.
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (var i = 0; i < children.length; i++) ...[
+                    if (i > 0) const SizedBox(width: 8),
+                    Expanded(child: children[i]),
+                  ],
                 ],
-              ],
+              ),
             ),
           ],
         ),

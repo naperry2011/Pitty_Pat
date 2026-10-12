@@ -81,6 +81,8 @@ RootLayout (CardStyleProvider, Analytics)
 - First to empty hand wins the round
 - Matches are first-to-N round wins (N = 3/5/10 from the setup screen); reaching N sets phase `gameEnd` (Rematch / Change settings)
 - `PLAY_CARD` is only accepted while `turnAction === 'draw'` (no second play during the end-turn delay)
+- Dead round: if no copy of any held rank is left in the deck or discard pile (`isDeadRound`), `END_TURN` redeals with no score and the next player starts
+- AI difficulty is the chance of overlooking a held match and drawing instead (Chill 35%, Clever 12%, Sharp 0%); playing a match always beats drawing
 
 ## Mobile App (`mobile/`, Flutter)
 
@@ -102,7 +104,7 @@ flutter build apk --debug        # Debug APK
 - **State and DI:** built-in `ChangeNotifier` + `InheritedNotifier` (`SettingsScope`); no state-management package. Tests inject the theme (`PittyPatApp(theme:)`), the controller (`GameScreen(controller:)`) and sounds (`defaultSoundPlayer`).
 - **Card art** is `CustomPainter` on a 240x360 design canvas (same coordinates as the web SVGs). Suits are vector paths, not glyphs, because Android can render suit characters as emoji.
 - **Audio** uses a game audio context that mixes with other apps (no audio focus); `.ogg` assets work on Android only and must be converted (e.g. `afconvert`) before iOS.
-- **App-only features (not on the web):** first-run tutorial (`tutorialDone` setting), 2-4 player tables (`opponents` setting, table-size reward multiplier), named opponents with optional chatter (`chatter` setting). The shared rules are unchanged; drawing is allowed even when holding a match (owner decision, 2026-10-11).
+- **App-only features (not on the web):** first-run tutorial (`tutorialDone` setting), 2-4 player tables (`opponents` setting, table-size reward multiplier), named opponents with optional chatter (`chatter` setting), each with a `PlayStyle` (miss rate, think delay, trait; tier averages stay within 0.03 of the difficulty rate and Sharp never misses) and a tagline (max 15 chars) shown at the table, an opponent ladder (`profile/ladder.dart`, 1v1 first to 3, one-time clear bonus), and head-to-head records per opponent (`PlayerProfile.rivals`, Stats screen). The shared rules are unchanged; drawing is allowed even when holding a match (owner decision, 2026-10-11).
 - **Pass-and-play:** `GameScreen.passAndPlay` seats 2-4 humans on one phone. Hands stay behind a "Pass the phone to <name>" cover until that player taps reveal; the "viewer" (bottom hand) is whoever revealed last. Rounds start with the player after the last winner. It never touches the player profile, and messages name players instead of saying "you" (`displayMessage(secondPerson: false)`).
 - **Layout review without a device:** `OUT_DIR=<dir> flutter test tool/render_screens.dart` renders key screens with the bundled fonts.
-- **Release setup:** application ID `com.pittypat.app` (permanent once uploaded). Fonts are bundled in `assets/google_fonts` with runtime fetching off (release builds have no INTERNET permission). Upload signing reads git-ignored `android/key.properties`. Icons/splash/store art are rendered by `tool/render_art.dart` (see `docs/release/`).
+- **Release setup:** application ID `com.pittypat.app` (permanent once uploaded). Fonts are bundled: `assets/google_fonts/*.ttf` are declared as weighted `Fredoka`/`Inter` families in `pubspec.yaml` (no google_fonts package; release builds have no INTERNET permission). Use those family names so `fontWeight` picks the right file. Upload signing reads git-ignored `android/key.properties`. Icons/splash/store art are rendered by `tool/render_art.dart` (see `docs/release/`).

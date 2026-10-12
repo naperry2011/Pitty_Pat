@@ -8,6 +8,7 @@ import {
   drawCard,
   playCard,
   endTurn,
+  isDeadRound,
   createInitialGameState,
 } from './game-engine';
 import { Card, GameState, Rank, Suit } from '@/types';
@@ -218,5 +219,30 @@ describe('createInitialGameState', () => {
     expect(state.currentPlayerIndex).toBe(0);
     expect(state.turnAction).toBe('draw');
     expect(state.phase).toBe('playing');
+  });
+});
+
+describe('isDeadRound', () => {
+  const kingsInHands = (rest: Partial<GameState> = {}) =>
+    makeState({
+      players: [
+        { id: 'player1', name: 'Player', hand: [card('K', 'spades')], isAI: false, wins: 0 },
+        { id: 'ai1', name: 'Computer', hand: [card('K', 'hearts')], isAI: true, wins: 0 },
+      ],
+      deck: [card('Q', 'clubs', false)],
+      discardPile: [card('5', 'hearts')],
+      ...rest,
+    });
+
+  test('is dead when no copy of a held rank is left outside the hands', () => {
+    expect(isDeadRound(kingsInHands())).toBe(true);
+  });
+
+  test('is live while a held rank is still in the deck', () => {
+    expect(isDeadRound(kingsInHands({ deck: [card('K', 'clubs', false)] }))).toBe(false);
+  });
+
+  test('a copy buried in the discard pile still counts (it can be reshuffled)', () => {
+    expect(isDeadRound(kingsInHands({ discardPile: [card('K', 'clubs'), card('5', 'hearts')] }))).toBe(false);
   });
 });

@@ -11,6 +11,7 @@ import '../widgets/playful_button.dart';
 import '../widgets/profile_badges.dart';
 import 'daily_screen.dart';
 import 'game_screen.dart';
+import 'ladder_screen.dart';
 import 'locker_screen.dart';
 import 'pass_play_setup_screen.dart';
 import 'settings_sheet.dart';
@@ -104,6 +105,14 @@ class HomeScreen extends StatelessWidget {
                                 ? const SetupScreen()
                                 : const GameScreen.tutorial(),
                           ),
+                        ),
+                        const SizedBox(height: 12),
+                        PlayfulButton(
+                          label: 'Ladder',
+                          icon: Icons.emoji_events_rounded,
+                          primary: false,
+                          fontSize: 18,
+                          onPressed: () => _push(context, const LadderScreen()),
                         ),
                         const SizedBox(height: 12),
                         PlayfulButton(

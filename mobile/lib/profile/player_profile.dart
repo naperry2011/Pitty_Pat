@@ -42,6 +42,26 @@ class DifficultyStats {
   }
 }
 
+// Head-to-head against one named opponent (solo matches only).
+class RivalRecord {
+  const RivalRecord({this.played = 0, this.won = 0});
+
+  final int played;
+  final int won;
+
+  int get lost => played - won;
+
+  Map<String, Object> toJson() => {'mp': played, 'mw': won};
+
+  static RivalRecord fromJson(Object? json) {
+    if (json is! Map) return const RivalRecord();
+    int read(String k) => (json[k] is int && (json[k] as int) >= 0) ? json[k] as int : 0;
+    final played = read('mp');
+    final won = read('mw');
+    return RivalRecord(played: played, won: won > played ? played : won);
+  }
+}
+
 // Everything the player earns. Persisted as one JSON document; every field is
 // validated on load so a corrupt or older save never crashes the app.
 class PlayerProfile {
@@ -55,6 +75,8 @@ class PlayerProfile {
     this.dailyCompleted = const {},
     this.dailyWon = const {},
     this.achievements = const {},
+    this.rivals = const {},
+    this.ladderCleared = 0,
   });
 
   final int coins;
@@ -66,6 +88,8 @@ class PlayerProfile {
   final Set<String> dailyCompleted; // date keys
   final Set<String> dailyWon; // date keys
   final Set<String> achievements; // achievement ids
+  final Map<String, RivalRecord> rivals; // opponent name -> record
+  final int ladderCleared; // ladder rungs beaten, in order
 
   static const schemaVersion = 1;
 
@@ -81,6 +105,8 @@ class PlayerProfile {
     Set<String>? dailyCompleted,
     Set<String>? dailyWon,
     Set<String>? achievements,
+    Map<String, RivalRecord>? rivals,
+    int? ladderCleared,
   }) =>
       PlayerProfile(
         coins: coins ?? this.coins,
@@ -92,6 +118,8 @@ class PlayerProfile {
         dailyCompleted: dailyCompleted ?? this.dailyCompleted,
         dailyWon: dailyWon ?? this.dailyWon,
         achievements: achievements ?? this.achievements,
+        rivals: rivals ?? this.rivals,
+        ladderCleared: ladderCleared ?? this.ladderCleared,
       );
 
   Map<String, Object> toJson() => {
@@ -105,6 +133,8 @@ class PlayerProfile {
         'daily': dailyCompleted.toList()..sort(),
         'dailyWon': dailyWon.toList()..sort(),
         'achievements': achievements.toList()..sort(),
+        'rivals': {for (final e in rivals.entries) e.key: e.value.toJson()},
+        'ladder': ladderCleared,
       };
 
   static PlayerProfile fromJson(Object? json) {
@@ -113,6 +143,7 @@ class PlayerProfile {
     Set<String> strings(String k) =>
         json[k] is List ? {for (final v in json[k] as List) if (v is String) v} : <String>{};
     final rawStats = json['stats'];
+    final rawRivals = json['rivals'];
 
     return PlayerProfile(
       coins: count('coins'),
@@ -128,6 +159,12 @@ class PlayerProfile {
       dailyCompleted: strings('daily'),
       dailyWon: strings('dailyWon'),
       achievements: strings('achievements'),
+      rivals: {
+        if (rawRivals is Map)
+          for (final e in rawRivals.entries)
+            if (e.key is String) e.key as String: RivalRecord.fromJson(e.value),
+      },
+      ladderCleared: count('ladder'),
     );
   }
 }

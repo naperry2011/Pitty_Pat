@@ -10,7 +10,6 @@ dependencies:
   audioplayers: ^6.8.1
   flutter:
     sdk: flutter
-  google_fonts: ^8.2.1
   shared_preferences: ^2.5.6
 
 dev_dependencies:
@@ -26,6 +25,28 @@ flutter:
   assets:
     - assets/sounds/
     - assets/google_fonts/
+  # Real weighted families: each fontWeight picks its own file.
+  fonts:
+    - family: Fredoka
+      fonts:
+        - asset: assets/google_fonts/Fredoka-Regular.ttf
+        - asset: assets/google_fonts/Fredoka-Medium.ttf
+          weight: 500
+        - asset: assets/google_fonts/Fredoka-SemiBold.ttf
+          weight: 600
+        - asset: assets/google_fonts/Fredoka-Bold.ttf
+          weight: 700
+    - family: Inter
+      fonts:
+        - asset: assets/google_fonts/Inter-Regular.ttf
+        - asset: assets/google_fonts/Inter-Medium.ttf
+          weight: 500
+        - asset: assets/google_fonts/Inter-SemiBold.ttf
+          weight: 600
+        - asset: assets/google_fonts/Inter-Bold.ttf
+          weight: 700
+        - asset: assets/google_fonts/Inter-ExtraBold.ttf
+          weight: 800
 
 # Art is rendered by tool/render_art.dart from the real card widgets.
 flutter_launcher_icons:

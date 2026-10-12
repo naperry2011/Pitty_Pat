@@ -60,11 +60,21 @@ GameState gameReducer(GameState state, GameAction action, [Random? random]) {
         ? playCard(state, cardId).copyWith(selectedCardId: null)
         : state,
     SelectCard(:final cardId) => isPlaying ? state.copyWith(selectedCardId: cardId) : state,
-    EndTurn() => isPlaying ? endTurn(state).copyWith(selectedCardId: null) : state,
+    EndTurn() => isPlaying ? _endTurn(state, random) : state,
   };
 }
 
-GameState _restartRound(GameState state, int starter, Random? random) {
+// A dead round is redealt with no score; the player whose turn it now is starts.
+GameState _endTurn(GameState state, Random? random) {
+  final next = endTurn(state).copyWith(selectedCardId: null);
+  if (!isDeadRound(next)) return next;
+  return _restartRound(next, next.currentPlayerIndex, random, message: deadRoundMessage);
+}
+
+const deadRoundMessage = 'No one can match. Redealing!';
+
+GameState _restartRound(GameState state, int starter, Random? random,
+    {String message = 'New round! Your turn.'}) {
   final dealt = dealCards(shuffleDeck(createDeck(), random), state.players.length, 5);
   return state.copyWith(
     deck: dealt.remainingDeck,
@@ -77,7 +87,7 @@ GameState _restartRound(GameState state, int starter, Random? random) {
     phase: GamePhase.playing,
     winner: null,
     turnAction: TurnAction.draw,
-    message: 'New round! Your turn.',
+    message: message,
     selectedCardId: null,
   );
 }

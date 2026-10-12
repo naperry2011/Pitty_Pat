@@ -1,5 +1,6 @@
 import '../game/ai_player.dart';
 import 'daily.dart';
+import 'ladder.dart';
 import 'player_profile.dart';
 import 'progression.dart';
 
@@ -49,6 +50,14 @@ final List<Achievement> achievements = [
     final m = c.lastMatch;
     return m != null && !m.isDaily && m.won && m.opponents >= 3;
   }, coins: 50),
+  Achievement('ladder_chill', 'Warming Up', 'Clear the three Chill rungs of the ladder',
+      (p, _) => p.ladderCleared >= 3),
+  Achievement('ladder_clever', 'Halfway Up', 'Clear the three Clever rungs of the ladder',
+      (p, _) => p.ladderCleared >= 6, coins: 50),
+  Achievement('ladder_top', 'Top of the Ladder', 'Beat Vince to finish the ladder',
+      (p, _) => p.ladderCleared >= ladderOrder.length, coins: 150),
+  Achievement('rivals_all', "Nobody's Safe", 'Beat every opponent at least once',
+      (p, _) => ladderOrder.every((name) => (p.rivals[name]?.won ?? 0) >= 1), coins: 75),
   Achievement('level_5', 'Rising Star', 'Reach level 5',
       (p, _) => levelForXp(p.xp) >= 5),
   Achievement('collector', 'Collector', 'Own 8 cosmetics',

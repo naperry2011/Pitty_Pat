@@ -4,7 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pitty_pat/cards/card_back.dart';
 import 'package:pitty_pat/cosmetics/catalog.dart';
 import 'package:pitty_pat/game/ai_player.dart';
+import 'package:pitty_pat/game/personalities.dart';
 import 'package:pitty_pat/profile/daily.dart';
+import 'package:pitty_pat/profile/ladder.dart';
 import 'package:pitty_pat/profile/player_profile.dart';
 import 'package:pitty_pat/profile/profile_store.dart';
 import 'package:pitty_pat/profile/progression.dart';
@@ -198,6 +200,114 @@ void main() {
       expect(reloaded.profile.statsFor(AIDifficulty.hard).roundsWon, 1);
       expect(reloaded.profile.statsFor(AIDifficulty.hard).matchesWon, 1);
       expect(reloaded.profile.achievements, containsAll(['first_win', 'sharp_win']));
+    });
+  });
+
+  group('rivals', () {
+    MatchOutcome vs(List<String> names, {bool won = true}) => MatchOutcome(
+          difficulty: AIDifficulty.easy,
+          matchTarget: 3,
+          won: won,
+          roundsWon: won ? 3 : 1,
+          roundsLost: won ? 1 : 3,
+          opponents: names.length,
+          opponentNames: names,
+        );
+
+    test('a win beats everyone at the table; a loss counts against each', () {
+      var (p, _) = applyMatch(const PlayerProfile(), vs(['Rosie', 'Pops']), _today);
+      (p, _) = applyMatch(p, vs(['Rosie'], won: false), _today);
+      expect(p.rivals['Rosie']!.played, 2);
+      expect(p.rivals['Rosie']!.won, 1);
+      expect(p.rivals['Rosie']!.lost, 1);
+      expect(p.rivals['Pops']!.won, 1);
+    });
+
+    test('daily matches do not count', () {
+      final (p, _) = applyMatch(
+        const PlayerProfile(),
+        const MatchOutcome(
+          difficulty: AIDifficulty.hard,
+          matchTarget: 1,
+          won: true,
+          roundsWon: 1,
+          roundsLost: 0,
+          isDaily: true,
+          opponentNames: ['Dee'],
+        ),
+        _today,
+      );
+      expect(p.rivals, isEmpty);
+    });
+
+    test("beating all nine unlocks Nobody's Safe", () {
+      var p = const PlayerProfile();
+      for (final name in ladderOrder.take(8)) {
+        (p, _) = applyMatch(p, vs([name]), _today);
+      }
+      expect(p.achievements, isNot(contains('rivals_all')));
+      (p, _) = applyMatch(p, vs([ladderOrder.last]), _today);
+      expect(p.achievements, contains('rivals_all'));
+    });
+
+    test('round-trips through JSON and survives bad data', () {
+      final p = const PlayerProfile(rivals: {'Theo': RivalRecord(played: 3, won: 2)}, ladderCleared: 4);
+      final back = PlayerProfile.fromJson(jsonDecode(jsonEncode(p.toJson())));
+      expect(back.rivals['Theo']!.won, 2);
+      expect(back.ladderCleared, 4);
+      final bad = PlayerProfile.fromJson({'rivals': {'Theo': {'mp': 1, 'mw': 5}, 'x': 'junk'}, 'ladder': -2});
+      expect(bad.rivals['Theo']!.won, 1);
+      expect(bad.ladderCleared, 0);
+    });
+  });
+
+  group('ladder', () {
+    MatchOutcome rung(int r, {bool won = true}) => MatchOutcome(
+          difficulty: personalityByName(ladderOrder[r]).difficulty,
+          matchTarget: ladderMatchTarget,
+          won: won,
+          roundsWon: won ? 3 : 0,
+          roundsLost: won ? 0 : 3,
+          opponentNames: [ladderOrder[r]],
+          ladderRung: r,
+        );
+
+    test('every rung is a roster opponent, climbing Chill to Sharp', () {
+      final tiers = [for (final n in ladderOrder) personalityByName(n).difficulty.index];
+      expect(tiers, [...tiers]..sort());
+      expect(ladderOrder.toSet(), hasLength(roster.length));
+    });
+
+    test('beating the next rung advances and pays the bonus once', () {
+      final (p, s) = applyMatch(const PlayerProfile(), rung(0), _today);
+      expect(p.ladderCleared, 1);
+      expect(s!.ladderBonus, ladderBonus(0));
+      final (again, s2) = applyMatch(p, rung(0), _today);
+      expect(again.ladderCleared, 1);
+      expect(s2!.ladderBonus, 0);
+    });
+
+    test('a loss or an out-of-order rung does not advance', () {
+      final (lost, _) = applyMatch(const PlayerProfile(), rung(0, won: false), _today);
+      expect(lost.ladderCleared, 0);
+      final (skipped, _) = applyMatch(const PlayerProfile(), rung(2), _today);
+      expect(skipped.ladderCleared, 0);
+    });
+
+    test('tier milestones and the top unlock achievements', () {
+      var p = const PlayerProfile();
+      for (var r = 0; r < ladderOrder.length; r++) {
+        (p, _) = applyMatch(p, rung(r), _today);
+        if (r == 2) expect(p.achievements, contains('ladder_chill'));
+        if (r == 5) expect(p.achievements, contains('ladder_clever'));
+      }
+      expect(p.ladderCleared, ladderOrder.length);
+      expect(p.achievements, contains('ladder_top'));
+    });
+
+    test('the bonus is included in the summary total', () {
+      final (_, s) = applyMatch(const PlayerProfile(), rung(0), _today);
+      expect(s!.totalCoins, s.reward.coins + ladderBonus(0) + s.unlocked.fold<int>(0, (a, x) => a + x.coins));
     });
   });
 }

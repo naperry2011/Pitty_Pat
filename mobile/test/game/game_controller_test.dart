@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pitty_pat/game/ai_player.dart';
@@ -16,6 +18,18 @@ import 'test_helpers.dart';
 const _endTurn = Duration(milliseconds: 600);
 const _aiThink = Duration(milliseconds: 1300);
 
+class _Roll implements Random {
+  _Roll(this.value);
+  final double value;
+
+  @override
+  double nextDouble() => value;
+  @override
+  int nextInt(int max) => max - 1;
+  @override
+  bool nextBool() => true;
+}
+
 GameState _aiTurnWith(List<PlayingCard> aiHand, PlayingCard top) => makeState(
       deck: [card(Rank.king, Suit.clubs, faceUp: false)],
       discardPile: [top],
@@ -28,6 +42,28 @@ GameState _aiTurnWith(List<PlayingCard> aiHand, PlayingCard top) => makeState(
 
 void main() {
   group('gameReducer', () {
+    test('EndTurn redeals with no score when no one can ever match', () {
+      final dead = makeState(
+        deck: [card(Rank.queen, Suit.clubs, faceUp: false)],
+        currentPlayerIndex: 1,
+        turnAction: TurnAction.waiting,
+        players: [
+          Player(id: 'player1', name: 'Player', hand: [card(Rank.king, Suit.spades)], isAI: false, wins: 1),
+          Player(id: 'ai1', name: 'Computer', hand: [card(Rank.king, Suit.hearts)], isAI: true, wins: 2),
+        ],
+      );
+
+      final next = gameReducer(dead, const EndTurn());
+      expect(next.message, deadRoundMessage);
+      expect(next.phase, GamePhase.playing);
+      expect(next.winner, isNull);
+      expect(next.currentPlayerIndex, 0);
+      expect(next.turnAction, TurnAction.draw);
+      expect(next.players.map((p) => p.hand.length), [5, 5]);
+      expect(next.players.map((p) => p.wins), [1, 2]);
+      expect(next.deck.length + next.discardPile.length, 42);
+    });
+
     test('StartGame resets wins for a rematch', () {
       final initial = createInitialGameState(matchTarget: 5);
       final withWins = initial.copyWith(
@@ -115,28 +151,32 @@ void main() {
           card(Rank.five, Suit.diamonds),
           card(Rank.nine, Suit.hearts),
         ];
+        // A roll of 0.2 is under easy's miss chance but above hard's (zero).
         final easy = GameController(
           difficulty: AIDifficulty.easy,
-          random: MaxRandom(),
+          random: _Roll(0.2),
           initialState: _aiTurnWith(hand, card(Rank.five, Suit.spades)),
         );
-        final medium = GameController(
-          difficulty: AIDifficulty.medium,
-          random: MaxRandom(),
+        final hard = GameController(
+          difficulty: AIDifficulty.hard,
+          random: _Roll(0.2),
           initialState: _aiTurnWith(hand, card(Rank.five, Suit.spades)),
         );
 
         async.elapse(_aiThink);
-        expect(easy.state.topDiscard.id, '5-clubs');
-        expect(medium.state.topDiscard.id, '5-diamonds');
+        expect(easy.state.topDiscard.id, 'K-clubs');
+        expect(easy.state.players[1].hand, hasLength(3));
+        expect(hard.state.topDiscard.id, '5-clubs');
+        expect(hard.state.players[1].hand, hasLength(2));
         easy.dispose();
-        medium.dispose();
+        hard.dispose();
       });
     });
 
     test('AI does not act before its thinking delay', () {
       fakeAsync((async) {
         final c = GameController(
+          difficulty: AIDifficulty.hard,
           initialState: _aiTurnWith([card(Rank.five, Suit.clubs)], card(Rank.five, Suit.spades)),
         );
         async.elapse(const Duration(milliseconds: 1100));

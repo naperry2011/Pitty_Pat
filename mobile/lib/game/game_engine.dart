@@ -48,6 +48,15 @@ bool canPlayCard(PlayingCard card, PlayingCard topDiscard) => card.rank == topDi
 List<PlayingCard> findPlayableCards(List<PlayingCard> hand, PlayingCard topDiscard) =>
     hand.where((card) => canPlayCard(card, topDiscard)).toList();
 
+// True when no one can ever play again: every rank still held has no copy left
+// in the deck or discard pile, so it can never reach the top (e.g. four players
+// each holding one King).
+bool isDeadRound(GameState state) {
+  final heldRanks = {for (final p in state.players) for (final c in p.hand) c.rank};
+  if (heldRanks.isEmpty) return false;
+  return ![...state.deck, ...state.discardPile].any((c) => heldRanks.contains(c.rank));
+}
+
 GameState drawCard(GameState state, [Random? random]) {
   var deck = state.deck;
   var discardPile = state.discardPile;

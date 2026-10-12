@@ -7,6 +7,7 @@ import '../cosmetics/catalog.dart';
 import '../game/ai_player.dart';
 import 'achievements.dart';
 import 'daily.dart';
+import 'ladder.dart';
 import 'player_profile.dart';
 import 'progression.dart';
 
@@ -17,16 +18,19 @@ class MatchSummary {
     required this.levelBefore,
     required this.levelAfter,
     required this.unlocked,
+    this.ladderBonus = 0,
   });
 
   final Reward reward; // match reward, before achievement coins
   final int streakBonus; // daily streak coins
+  final int ladderBonus; // first clear of a ladder rung
   final int levelBefore;
   final int levelAfter;
   final List<Achievement> unlocked;
 
   bool get leveledUp => levelAfter > levelBefore;
-  int get totalCoins => reward.coins + streakBonus + unlocked.fold(0, (a, x) => a + x.coins);
+  int get totalCoins =>
+      reward.coins + streakBonus + ladderBonus + unlocked.fold(0, (a, x) => a + x.coins);
 }
 
 DifficultyStats _bump(DifficultyStats s, {int matches = 0, int matchWins = 0, int rounds = 0, int roundWins = 0}) =>
@@ -70,11 +74,30 @@ PlayerProfile applyRound(PlayerProfile p, AIDifficulty d, {required bool won, bo
       },
       currentWinStreak: streak,
       bestWinStreak: streak > p.bestWinStreak ? streak : p.bestWinStreak,
+      // A win beats everyone at the table; a loss counts against each of them.
+      rivals: {
+        ...p.rivals,
+        for (final name in o.opponentNames)
+          name: RivalRecord(
+            played: (p.rivals[name]?.played ?? 0) + 1,
+            won: (p.rivals[name]?.won ?? 0) + (o.won ? 1 : 0),
+          ),
+      },
     );
   }
 
+  // Only the next uncleared rung advances the ladder (replays pay nothing extra).
+  var ladder = 0;
+  if (!o.isDaily && o.won && o.ladderRung != null && o.ladderRung == p.ladderCleared) {
+    ladder = ladderBonus(o.ladderRung!);
+    next = next.copyWith(ladderCleared: p.ladderCleared + 1);
+  }
+
   final reward = matchReward(o);
-  next = next.copyWith(coins: next.coins + reward.coins + streakBonus, xp: next.xp + reward.xp);
+  next = next.copyWith(
+    coins: next.coins + reward.coins + streakBonus + ladder,
+    xp: next.xp + reward.xp,
+  );
 
   // One pass is enough: achievement coins never satisfy another achievement.
   final unlocked = newlyEarned(next, AchievementContext(lastMatch: o, today: today));
@@ -91,6 +114,7 @@ PlayerProfile applyRound(PlayerProfile p, AIDifficulty d, {required bool won, bo
       levelBefore: levelBefore,
       levelAfter: levelForXp(next.xp),
       unlocked: unlocked,
+      ladderBonus: ladder,
     ),
   );
 }

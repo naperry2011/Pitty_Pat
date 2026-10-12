@@ -7,6 +7,7 @@ import {
   drawCard,
   playCard,
   endTurn,
+  isDeadRound,
   shuffleDeck,
   createDeck,
   dealCards
@@ -16,6 +17,30 @@ import { createPlaceholderGameState } from '@/lib/initial-state';
 import { TIMING } from '@/lib/timing';
 import { logGameState } from '@/lib/debug-helper';
 
+export const DEAD_ROUND_MESSAGE = 'No one can match. Redealing!';
+
+// Fresh hands for the same players; wins and match length carry over
+function dealRound(state: GameState, starter: number, message: string): GameState {
+  const deck = shuffleDeck(createDeck());
+  const { playerHands, remainingDeck, discardPile } = dealCards(deck, state.players.length, 5);
+
+  return {
+    ...state,
+    deck: remainingDeck,
+    discardPile,
+    players: state.players.map((player, index) => ({
+      ...player,
+      hand: playerHands[index]
+    })),
+    currentPlayerIndex: starter,
+    phase: 'playing',
+    winner: null,
+    turnAction: 'draw',
+    message,
+    selectedCardId: null
+  };
+}
+
 // Game reducer to handle state transitions
 export function gameReducer(state: GameState, action: GameAction): GameState {
   const newState: GameState = (() => {
@@ -23,27 +48,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       case 'START_GAME':
         return createInitialGameState('Player', action.matchTarget);
 
-    case 'RESTART_GAME': {
+    case 'RESTART_GAME':
       // Start a new round with same players
-      const deck = shuffleDeck(createDeck());
-      const { playerHands, remainingDeck, discardPile } = dealCards(deck, state.players.length, 5);
-
-      return {
-        ...state,
-        deck: remainingDeck,
-        discardPile,
-        players: state.players.map((player, index) => ({
-          ...player,
-          hand: playerHands[index]
-        })),
-        currentPlayerIndex: 0,
-        phase: 'playing',
-        winner: null,
-        turnAction: 'draw',
-        message: "New round! Your turn.",
-        selectedCardId: null
-      };
-    }
+      return dealRound(state, 0, "New round! Your turn.");
 
     case 'DRAW_CARD':
       if (state.turnAction !== 'draw' || state.phase !== 'playing') return state;
@@ -68,12 +75,17 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         selectedCardId: action.cardId
       };
 
-    case 'END_TURN':
+    case 'END_TURN': {
       if (state.phase !== 'playing') return state;
-      return {
+      const next: GameState = {
         ...endTurn(state),
         selectedCardId: null  // Clear selection on turn end
       };
+      // A dead round is redealt with no score; the player whose turn it now is starts.
+      return isDeadRound(next)
+        ? dealRound(next, next.currentPlayerIndex, DEAD_ROUND_MESSAGE)
+        : next;
+    }
 
     case 'UPDATE_MESSAGE':
       return {
