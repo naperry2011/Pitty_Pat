@@ -2,6 +2,8 @@
 // Not part of the test suite. Two modes:
 //   OUT_DIR=<folder> flutter test tool/render_screens.dart           layout review
 //   STORE=1 OUT_DIR=<folder> flutter test tool/render_screens.dart   Play Store set (1080x1920)
+//   STORE=iphone ...                                                 App Store iPhone 6.3" (1206x2622)
+//   STORE=ipad ...                                                   App Store iPad 13" (2064x2752)
 // Store PNGs come out 32-bit; flatten them to 24-bit before upload (see docs/release).
 // Test harness: uses the same test-only hooks as the widget tests.
 // ignore_for_file: invalid_use_of_visible_for_testing_member
@@ -274,7 +276,8 @@ void main() {
     defaultSoundPlayer = const MutedSoundPlayer();
   });
 
-  final store = Platform.environment['STORE'] == '1';
+  final storeTarget = Platform.environment['STORE'];
+  final store = storeTarget != null;
 
   testWidgets('render screens', skip: store, (tester) async {
     const phone = Size(411, 914);
@@ -313,9 +316,14 @@ void main() {
   });
 
   testWidgets('render store screenshots', skip: !store, (tester) async {
-    // 405x720 logical at 8/3 = exactly 1080x1920 (9:16), Google's recommended game size.
-    const size = Size(405, 720);
-    const ratio = 8 / 3;
+    final (size, ratio) = switch (storeTarget) {
+      // iPhone 17 Pro points at 3x: App Store Connect's required 6.3" size.
+      'iphone' => (const Size(402, 874), 3.0),
+      // iPad Pro 13" points at 2x: Apple's required 13" size.
+      'ipad' => (const Size(1032, 1376), 2.0),
+      // 405x720 logical at 8/3 = exactly 1080x1920 (9:16), Google's recommended game size.
+      _ => (const Size(405, 720), 8 / 3),
+    };
     final progress = {
       'profile.v1': _profile({
         'coins': 640,
