@@ -1,4 +1,5 @@
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 // Port of lib/sound.ts. Presentation-only: the game never depends on these.
@@ -12,6 +13,10 @@ enum SoundCue {
 
   const SoundCue(this.file);
   final String file;
+
+  // iOS can't decode Ogg Vorbis, so it gets AAC copies of the same sounds.
+  String get asset =>
+      'sounds/$file.${defaultTargetPlatform == TargetPlatform.iOS ? 'm4a' : 'ogg'}';
 
   // Sounds that accompany a physical card action get a small haptic tick too.
   bool get hasHaptic => this == SoundCue.slide || this == SoundCue.match;
@@ -53,7 +58,7 @@ class SoundEffects implements SoundPlayer {
     // Audio is best-effort; never break the game over it.
     try {
       final pool = await (_pools[cue] ??= AudioPool.create(
-        source: AssetSource('sounds/${cue.file}.ogg'),
+        source: AssetSource(cue.asset),
         maxPlayers: 3,
         audioContext: _context,
       ));
