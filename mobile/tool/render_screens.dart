@@ -2,7 +2,7 @@
 // Not part of the test suite. Two modes:
 //   OUT_DIR=<folder> flutter test tool/render_screens.dart           layout review
 //   STORE=1 OUT_DIR=<folder> flutter test tool/render_screens.dart   Play Store set (1080x1920)
-//   STORE=iphone ...                                                 App Store iPhone 6.9" (1320x2868)
+//   STORE=iphone ...                                                 App Store iPhone 6.3" (1206x2622)
 //   STORE=ipad ...                                                   App Store iPad 13" (2064x2752)
 // Store PNGs come out 32-bit; flatten them to 24-bit before upload (see docs/release).
 // Test harness: uses the same test-only hooks as the widget tests.
@@ -317,8 +317,8 @@ void main() {
 
   testWidgets('render store screenshots', skip: !store, (tester) async {
     final (size, ratio) = switch (storeTarget) {
-      // iPhone 17 Pro Max points at 3x: Apple's required 6.9" size.
-      'iphone' => (const Size(440, 956), 3.0),
+      // iPhone 17 Pro points at 3x: App Store Connect's required 6.3" size.
+      'iphone' => (const Size(402, 874), 3.0),
       // iPad Pro 13" points at 2x: Apple's required 13" size.
       'ipad' => (const Size(1032, 1376), 2.0),
       // 405x720 logical at 8/3 = exactly 1080x1920 (9:16), Google's recommended game size.

@@ -1,14 +1,14 @@
 # App Store listing: Pitty Pat (iOS)
 
-**Drafted:** 2026-11-03. App Store Connect record: "Pitty Pat: Card Game", bundle ID `com.pittypat.app`, team Nicholas Perry (`PGVTN7X3HQ`).
+**Drafted:** 2026-11-03. Entered in App Store Connect 2026-11-03 (version 1.0.0, build 2). App Store Connect record: "Pitty Pat: Card Game", bundle ID `com.pittypat.app`, team Nicholas Perry (`PGVTN7X3HQ`).
 
 ## Text
 
 | Field | Limit | Value |
 |---|---|---|
 | Name | 30 | Pitty Pat: Card Game |
-| Subtitle | 30 | Match the rank. Empty your hand. |
-| Category | | Games, primary **Card**, secondary **Casual** |
+| Subtitle | 30 | Match ranks. Empty your hand. |
+| Category | | Games, subcategories **Card** and **Casual** (no secondary category) |
 | Price | | Free, no in-app purchases |
 | Privacy Policy URL | | https://pitty-pat-glwy.vercel.app/privacy |
 | Support URL | | https://pitty-pat-glwy.vercel.app/ |
@@ -60,7 +60,7 @@ All "None", except: **Simulated Gambling: None.** Coins are earned in play, can'
 Rendered from the real widgets with `STORE=iphone` / `STORE=ipad OUT_DIR=<dir> flutter test tool/render_screens.dart`:
 1 home, 2 table with chatter, 3 tap to play, 4 round win, 5 Locker, 6 Daily Challenge.
 
-- iPhone 6.9" (1320x2868): required.
+- iPhone 6.3" (1206x2622): required (App Store Connect's required slot as of 2026-11; it scales down to smaller iPhones).
 - iPad 13" (2064x2752): only required if the app ships for iPad.
 
 ## App Review information
