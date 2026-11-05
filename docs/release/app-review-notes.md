@@ -8,7 +8,7 @@ Answers to App Review's Guideline 2.1 "Information Needed" request (2026-11-04).
 Thank you for reviewing Pitty Pat.
 
 1. SCREEN RECORDING
-Attached: a screen recording made on a physical iPhone running the latest iOS. It starts with launching the app from the Home Screen and shows the first-run tutorial, a full game against computer opponents, the Daily Challenge, the opponent Ladder, Pass & Play, the Locker, Stats and Settings.
+Attached: a screen recording of the app on the iOS Simulator (iPhone 17 Pro, iOS 27.2, the latest release). I am an independent developer and do not currently own a physical iPhone, so I could not record on a device; I'm happy to provide anything else you need. The recording starts on the Home Screen, launches the app from its icon, and shows the first-run tutorial, a game against two computer opponents, the Daily Challenge, the opponent Ladder, Pass & Play, the Locker and Stats.
 The app has no account registration, login or account deletion (there are no accounts), no user-generated content, and no paid content or in-app purchases.
 
 2. PURPOSE AND AUDIENCE
@@ -41,10 +41,8 @@ Pitty Pat is a traditional card game; all card artwork and code are original to 
 
 ---
 
-## Recording checklist (on your iPhone)
+## Recording (2026-11-04)
 
-1. Install build 2 from **TestFlight** (or delete and reinstall it so the tutorial shows).
-2. Add **Screen Recording** to Control Center if it isn't there (Settings → Control Center).
-3. Start recording on the **Home Screen**, then tap the Pitty Pat icon. Apple wants the recording to *begin with launching the app*.
-4. Show, in about 2 to 3 minutes: tutorial → a game to a round win → Daily Challenge → Ladder → Pass & Play setup → Locker → Stats → Settings.
-5. Stop the recording, then AirDrop it to this Mac (it lands in Downloads).
+No physical iPhone was available, so the recording was made on a fresh iPhone 17 Pro simulator running iOS 27.2 with `xcrun simctl io <device> recordVideo`, starting on the Home Screen and tapping the app icon. Simulator builds are debug builds, where Settings shows the "Debug tools" card, so the video ends before Settings is opened. It was trimmed and exported at 720p (5 min 41 s, about 20 MB).
+
+If App Review insists on a physical device, record build 2 from TestFlight on a borrowed iPhone (Control Center → Screen Recording, starting on the Home Screen) and update item 1 above.
